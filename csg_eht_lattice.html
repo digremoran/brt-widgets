@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum CSG Lattice Parser: Boolean Geometry &amp; EHT Horizon Projection</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0b0e14;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 20px;
+    background: #111622;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { font-size: 15px; font-weight: 600; color: #f8fafc; }
+  header span { font-size: 12px; color: #94a3b8; }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px 20px;
+    background: #0f131d;
+    border-bottom: 1px solid #1e293b;
+  }
+  .metric-card {
+    background: #151b28;
+    border: 1px solid #222d42;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; }
+  .metric-val { font-size: 14px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #38bdf8; margin-top: 2px; }
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 240px;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hud-badge {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; }
+  .mini-hud {
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 8px;
+  }
+  .mini-title { font-size: 9px; text-transform: uppercase; color: #94a3b8; margin-bottom: 5px; text-align: center; }
+  .mini-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 11px);
+    gap: 3px;
+  }
+  .mini-cell {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    background: #1e293b;
+  }
+  .mini-cell.on { background: #38bdf8; box-shadow: 0 0 4px #38bdf8; }
+  .controls {
+    padding: 12px 20px;
+    background: #111622;
+    border-top: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 6px 11px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  button:hover { border-color: #38bdf8; }
+  button.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+  .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .slider-group { display: flex; flex-direction: column; gap: 4px; }
+  .slider-header { display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; }
+  input[type=range] { width: 100%; accent-color: #38bdf8; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Quantum CSG Lattice Parser</h1>
+  <span>Boolean Geometry &amp; EHT Horizon Projection (5&times;5&times;5 Matrix)</span>
+</header>
+
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-label">Active Qubits</div>
+    <div class="metric-val" id="m-active">27 / 125</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Occupancy</div>
+    <div class="metric-val" id="m-occ">21.6%</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Lattice Operation</div>
+    <div class="metric-val" id="m-op">INTERSECTION</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">EHT Critical Ratio</div>
+    <div class="metric-val" id="m-eht">b<sub>crit</sub> = &radic;27 M</div>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <div class="hud-badge"><span class="dot"></span>Diamond NV / EHT CSG Lattice Simulation</div>
+  <div class="mini-hud">
+    <div class="mini-title">Z-Slice (<span id="slice-idx">0</span>)</div>
+    <div class="mini-grid" id="mini-grid"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="btn-row">
+    <button id="btn-int" class="active" onclick="setOp('INTERSECTION')">Intersection (Sphere &cap; Cube)</button>
+    <button id="btn-uni" onclick="setOp('UNION')">Union (Sphere &cup; Cube)</button>
+    <button id="btn-sub" onclick="setOp('SUBTRACTION')">Subtraction (Cube &minus; Sphere)</button>
+    <button id="btn-eht" onclick="setOp('EHT_SHELL')">EHT Photon Shell</button>
+  </div>
+  <div class="sliders">
+    <div class="slider-group">
+      <div class="slider-header">
+        <span>CSG Boundary Radius (R)</span>
+        <span id="lbl-rad">1.50</span>
+      </div>
+      <input type="range" id="sl-rad" min="0.5" max="3.2" step="0.05" value="1.50">
+    </div>
+    <div class="slider-group">
+      <div class="slider-header">
+        <span>Tomographic Slice Plane (Z)</span>
+        <span id="lbl-z">0</span>
+      </div>
+      <input type="range" id="sl-z" min="-2" max="2" step="1" value="0">
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  const wrap = document.getElementById('canvas-wrap');
+  const scene = new THREE.Scene();
+
+  const camera = new THREE.PerspectiveCamera(42, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  camera.position.set(4.6, 3.6, 5.4);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0b0e14);
+  wrap.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const pLight = new THREE.PointLight(0x38bdf8, 1.4, 25);
+  pLight.position.set(5, 6, 5);
+  scene.add(pLight);
+
+  const latticeGroup = new THREE.Group();
+  scene.add(latticeGroup);
+
+  // Build 5x5x5 nodes (coordinates -2..2, scaled by 0.85 in scene, logical radius in lattice units)
+  const nodes = [];
+  const nodeGeo = new THREE.SphereGeometry(0.14, 16, 16);
+  const spacing = 0.82;
+
+  for (let x = -2; x <= 2; x++) {
+    for (let y = -2; y <= 2; y++) {
+      for (let z = -2; z <= 2; z++) {
+        // Logical distance calibrated so R = 1.50 captures exact 3x3x3 core (max |coord| <= 1 -> d_inf <= 1 or Euclidean <= sqrt(3)=1.732)
+        const dEuclid = Math.sqrt(x * x + y * y + z * z);
+        const dCheb = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
+        // Blended metric so R=1.50 cleanly captures 27 nodes (the inner 3x3x3 core)
+        const rMetric = 0.55 * dEuclid + 0.45 * dCheb;
+
+        const mat = new THREE.MeshPhongMaterial({
+          color: 0x334155,
+          emissive: 0x000000,
+          transparent: true,
+          opacity: 0.45
+        });
+        const mesh = new THREE.Mesh(nodeGeo, mat);
+        mesh.position.set(x * spacing, y * spacing, z * spacing);
+        latticeGroup.add(mesh);
+        nodes.push({ mesh, x, y, z, rMetric, dEuclid, active: false });
+      }
+    }
+  }
+
+  // Cube wireframe bounding box
+  const cubeBox = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(4 * spacing, 4 * spacing, 4 * spacing)),
+    new THREE.LineBasicMaterial({ color: 0x1e293b })
+  );
+  latticeGroup.add(cubeBox);
+
+  // CSG Wireframe Sphere
+  const csgSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(1.5 * spacing, 24, 18),
+    new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.25 })
+  );
+  latticeGroup.add(csgSphere);
+
+  // EHT Photon Ring Torus
+  const ehtRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1.5 * spacing, 0.045, 16, 64),
+    new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.85 })
+  );
+  ehtRing.rotation.x = Math.PI / 2;
+  ehtRing.visible = false;
+  latticeGroup.add(ehtRing);
+
+  // Build Mini-HUD 5x5 cells
+  const miniGrid = document.getElementById('mini-grid');
+  const miniCells = [];
+  for (let i = 0; i < 25; i++) {
+    const div = document.createElement('div');
+    div.className = 'mini-cell';
+    miniGrid.appendChild(div);
+    miniCells.push(div);
+  }
+
+  let op = 'INTERSECTION';
+  let radius = 1.50;
+  let sliceZ = 0;
+
+  function updateSim() {
+    document.getElementById('m-op').textContent = op;
+    document.getElementById('lbl-rad').textContent = radius.toFixed(2);
+    document.getElementById('lbl-z').textContent = sliceZ;
+    document.getElementById('slice-idx').textContent = sliceZ;
+
+    csgSphere.scale.setScalar(radius / 1.5);
+    ehtRing.scale.setScalar(radius / 1.5);
+    ehtRing.visible = (op === 'EHT_SHELL');
+    csgSphere.material.color.setHex(op === 'SUBTRACTION' ? 0xf43f5e : (op === 'EHT_SHELL' ? 0xf59e0b : 0x38bdf8));
+
+    let activeCount = 0;
+    nodes.forEach(n => {
+      const inside = n.rMetric <= radius;
+      let isOn = false;
+      if (op === 'INTERSECTION') isOn = inside;
+      else if (op === 'UNION') isOn = true;
+      else if (op === 'SUBTRACTION') isOn = !inside;
+      else if (op === 'EHT_SHELL') isOn = Math.abs(n.rMetric - radius) <= 0.36;
+
+      n.active = isOn;
+      if (isOn) activeCount++;
+
+      const onSlice = (n.z === sliceZ);
+      if (isOn) {
+        const hex = op === 'SUBTRACTION' ? 0xf43f5e : (op === 'EHT_SHELL' ? 0xf59e0b : 0x7dd3fc);
+        n.mesh.material.color.setHex(hex);
+        n.mesh.material.emissive.setHex(op === 'SUBTRACTION' ? 0x9f1239 : (op === 'EHT_SHELL' ? 0xb45309 : 0x0284c7));
+        n.mesh.material.emissiveIntensity = onSlice ? 0.9 : 0.45;
+        n.mesh.material.opacity = onSlice ? 1.0 : 0.85;
+        n.mesh.scale.setScalar(onSlice ? 1.25 : 1.0);
+      } else {
+        n.mesh.material.color.setHex(0x334155);
+        n.mesh.material.emissive.setHex(0x000000);
+        n.mesh.material.opacity = onSlice ? 0.45 : 0.18;
+        n.mesh.scale.setScalar(0.85);
+      }
+    });
+
+    // Update 2D Mini-HUD for sliceZ
+    let cellIdx = 0;
+    for (let y = 2; y >= -2; y--) {
+      for (let x = -2; x <= 2; x++) {
+        const match = nodes.find(n => n.x === x && n.y === y && n.z === sliceZ);
+        miniCells[cellIdx].classList.toggle('on', Boolean(match && match.active));
+        cellIdx++;
+      }
+    }
+
+    document.getElementById('m-active').textContent = `${activeCount} / 125`;
+    document.getElementById('m-occ').textContent = `${((activeCount / 125) * 100).toFixed(1)}%`;
+  }
+
+  window.setOp = function(nextOp) {
+    op = nextOp;
+    document.querySelectorAll('.btn-row button').forEach(b => b.classList.remove('active'));
+    const map = { INTERSECTION: 'btn-int', UNION: 'btn-uni', SUBTRACTION: 'btn-sub', EHT_SHELL: 'btn-eht' };
+    document.getElementById(map[nextOp]).classList.add('active');
+    updateSim();
+  };
+
+  document.getElementById('sl-rad').addEventListener('input', e => {
+    radius = parseFloat(e.target.value);
+    updateSim();
+  });
+  document.getElementById('sl-z').addEventListener('input', e => {
+    sliceZ = parseInt(e.target.value, 10);
+    updateSim();
+  });
+
+  let isDragging = false, prevX = 0, rotY = 0.4;
+  wrap.addEventListener('pointerdown', e => { isDragging = true; prevX = e.clientX; });
+  window.addEventListener('pointerup', () => { isDragging = false; });
+  window.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    rotY += (e.clientX - prevX) * 0.008;
+    prevX = e.clientX;
+  });
+
+  window.addEventListener('resize', () => {
+    camera.aspect = wrap.clientWidth / wrap.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  });
+
+  function animate(t) {
+    requestAnimationFrame(animate);
+    latticeGroup.rotation.y = rotY + t * 0.00025;
+    renderer.render(scene, camera);
+  }
+
+  updateSim();
+  animate(0);
+</script>
+</body>
+</html>
