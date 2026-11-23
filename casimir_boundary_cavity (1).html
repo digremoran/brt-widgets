@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casimir Boundary Cavity: Vacuum Mode Filtering &amp; Plate Pressure</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0b0e14;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 20px;
+    background: #111622;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.3px; color: #f8fafc; }
+  header span { font-size: 12px; color: #94a3b8; }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px 20px;
+    background: #0f131d;
+    border-bottom: 1px solid #1e293b;
+  }
+  .metric-card {
+    background: #151b28;
+    border: 1px solid #222d42;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; }
+  .metric-val { font-size: 14px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #38bdf8; margin-top: 2px; }
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 240px;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hud-badge {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #38bdf8; transition: background 0.15s; }
+  .pressure-hud {
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 8px 10px;
+    width: 158px;
+  }
+  .pr-title { font-size: 9px; text-transform: uppercase; color: #94a3b8; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .pr-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #1e293b;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .pr-bar-fill {
+    height: 100%;
+    width: 45%;
+    background: #38bdf8;
+    transition: width 0.08s linear, background 0.15s;
+  }
+  .controls {
+    padding: 12px 20px;
+    background: #111622;
+    border-top: 1px solid #1e293b;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .slider-group { display: flex; flex-direction: column; gap: 4px; }
+  .slider-header { display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; }
+  input[type=range] { width: 100%; accent-color: #38bdf8; cursor: pointer; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  button:hover { border-color: #38bdf8; color: #fff; }
+  button.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Casimir Boundary Cavity</h1>
+  <span>Vacuum Mode Filtering &amp; Plate Pressure &bull; Beyond Real Time</span>
+</header>
+
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-label">Allowed Cavity Modes</div>
+    <div class="metric-val" id="m-modes">5 / 12</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Inward Pressure (&Delta;P)</div>
+    <div class="metric-val" id="m-press">0.42</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Regime State</div>
+    <div class="metric-val" id="m-state">CAVITY EXCLUDED</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Snap Events</div>
+    <div class="metric-val" id="m-snaps">0</div>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <div class="hud-badge"><span class="dot" id="hud-dot"></span><span id="hud-text">Parallel Conducting Plates &bull; Mode Filter</span></div>
+  <div class="pressure-hud">
+    <div class="pr-title"><span>Inward Force</span><span id="pr-pct">42%</span></div>
+    <div class="pr-bar-bg"><div class="pr-bar-fill" id="pr-fill"></div></div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="slider-group">
+    <div class="slider-header">
+      <span>Plate Separation Gap (d)</span>
+      <span id="lbl-gap">1.60</span>
+    </div>
+    <input type="range" id="sl-gap" min="0.55" max="3.20" step="0.02" value="1.60">
+  </div>
+  <div class="slider-group">
+    <div class="slider-header">
+      <span>Tomographic Slice Plane (Depth Z)</span>
+      <span id="lbl-slice">0.00</span>
+    </div>
+    <input type="range" id="sl-slice" min="-1.8" max="1.8" step="0.04" value="0.0">
+  </div>
+  <div class="presets">
+    <button onclick="setPreset('wide')">Wide Gap</button>
+    <button onclick="setPreset('narrow')" class="active">Narrow Gap</button>
+    <button onclick="triggerSnap()">Snap Plates</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  const wrap = document.getElementById('canvas-wrap');
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0b0e14, 0.042);
+
+  const camera = new THREE.PerspectiveCamera(42, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  camera.position.set(0, 1.1, 7.8);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0b0e14);
+  wrap.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.15);
+  dirLight.position.set(4, 7, 6);
+  scene.add(dirLight);
+
+  const assembly = new THREE.Group();
+  scene.add(assembly);
+
+  // Two parallel conducting plates along X = -halfGap and X = +halfGap
+  const plateGeo = new THREE.BoxGeometry(0.12, 3.4, 3.4);
+  const leftPlateMat = new THREE.MeshPhongMaterial({
+    color: 0x38bdf8,
+    emissive: 0x0284c7,
+    emissiveIntensity: 0.35,
+    transparent: true,
+    opacity: 0.32
+  });
+  const rightPlateMat = leftPlateMat.clone();
+
+  const leftPlate = new THREE.Mesh(plateGeo, leftPlateMat);
+  const rightPlate = new THREE.Mesh(plateGeo, rightPlateMat);
+
+  const edgeGeo = new THREE.EdgesGeometry(plateGeo);
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
+  leftPlate.add(new THREE.LineSegments(edgeGeo, edgeMat));
+  rightPlate.add(new THREE.LineSegments(edgeGeo, edgeMat));
+
+  assembly.add(leftPlate);
+  assembly.add(rightPlate);
+
+  // Outer ambient vacuum fluctuation nodes + inner cavity standing waves
+  const nodeGeo = new THREE.SphereGeometry(0.085, 12, 12);
+  const outerNodes = [];
+
+  for (let side of [-1, 1]) {
+    for (let iy = 0; iy < 5; iy++) {
+      for (let iz = 0; iz < 3; iz++) {
+        for (let ix = 0; ix < 3; ix++) {
+          const mat = new THREE.MeshPhongMaterial({
+            color: 0x38bdf8,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.35,
+            transparent: true,
+            opacity: 0.78
+          });
+          const m = new THREE.Mesh(nodeGeo, mat);
+          const baseXOffset = 0.45 + ix * 0.42;
+          const y = (iy - 2) * 0.65;
+          const z = (iz - 1) * 0.95;
+          assembly.add(m);
+          outerNodes.push({ mesh: m, side, baseXOffset, y, z, phase: ix * 0.9 + iy * 0.6 + iz * 1.1 });
+        }
+      }
+    }
+  }
+
+  // 12 candidate standing-wave harmonic channels inside the cavity (n = 1..12)
+  const totalModes = 12;
+  const modeChannels = [];
+  const segCount = 24;
+
+  for (let k = 0; k < totalModes; k++) {
+    const modeNum = k + 1; // n = 1 (longest half-wavelength) up to n = 12 (shortest)
+    const y = ((k / (totalModes - 1)) - 0.5) * 2.55;
+    const z = ((k % 3) - 1) * 0.85;
+
+    const pts = [];
+    for (let s = 0; s <= segCount; s++) {
+      pts.push(new THREE.Vector3(0, y, z));
+    }
+    const waveGeo = new THREE.BufferGeometry().setFromPoints(pts);
+    const waveMat = new THREE.LineBasicMaterial({
+      color: 0x22d3ee,
+      transparent: true,
+      opacity: 0.85
+    });
+    const waveLine = new THREE.Line(waveGeo, waveMat);
+    assembly.add(waveLine);
+
+    const nodeMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.085, 12, 12),
+      new THREE.MeshPhongMaterial({
+        color: 0x22d3ee,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.55,
+        transparent: true,
+        opacity: 0.9
+      })
+    );
+    assembly.add(nodeMesh);
+
+    // Longer wavelengths (smaller n) require a wider plate gap d to fit
+    const minGapReq = 0.55 + ((totalModes - modeNum) / (totalModes - 1)) * 2.45;
+    modeChannels.push({
+      waveLine,
+      waveGeo,
+      waveMat,
+      nodeMesh,
+      y,
+      z,
+      modeNum,
+      minGapReq,
+      phase: k * 0.6,
+      allowed: true
+    });
+  }
+
+  // Tomographic Z-slice frame
+  const sliceGeo = new THREE.PlaneGeometry(5.6, 3.8);
+  const sliceMat = new THREE.MeshBasicMaterial({
+    color: 0x22d3ee,
+    transparent: true,
+    opacity: 0.09,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  const slicePlane = new THREE.Mesh(sliceGeo, sliceMat);
+  const sliceBorder = new THREE.LineLoop(
+    new THREE.EdgesGeometry(sliceGeo),
+    new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.65 })
+  );
+  slicePlane.add(sliceBorder);
+  assembly.add(slicePlane);
+
+  let gap = 1.60;
+  let sliceZ = 0.0;
+  let snapPulse = 0.0;
+  let snapCount = 0;
+
+  function computeAllowedModes() {
+    let count = 0;
+    modeChannels.forEach(m => {
+      m.allowed = gap >= m.minGapReq;
+      if (m.allowed) count++;
+    });
+    return Math.max(1, count);
+  }
+
+  function updateUI() {
+    const allowed = computeAllowedModes();
+    const halfGap = gap * 0.5;
+    leftPlate.position.x = -halfGap;
+    rightPlate.position.x = halfGap;
+
+    const rawPress = Math.min(1.0, Math.pow(1.05 / gap, 2.2));
+    const pressVal = (rawPress * 0.96).toFixed(2);
+    const pct = Math.round(rawPress * 100);
+
+    document.getElementById('m-modes').textContent = `${allowed} / ${totalModes}`;
+    document.getElementById('m-press').textContent = pressVal;
+    document.getElementById('pr-pct').textContent = `${pct}%`;
+    document.getElementById('pr-fill').style.width = `${pct}%`;
+    document.getElementById('lbl-gap').textContent = gap.toFixed(2);
+    document.getElementById('lbl-slice').textContent = sliceZ.toFixed(2);
+    slicePlane.position.z = sliceZ;
+  }
+
+  document.getElementById('sl-gap').addEventListener('input', e => {
+    gap = parseFloat(e.target.value);
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    updateUI();
+  });
+
+  document.getElementById('sl-slice').addEventListener('input', e => {
+    sliceZ = parseFloat(e.target.value);
+    updateUI();
+  });
+
+  window.setPreset = function(mode) {
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    if (mode === 'wide') {
+      gap = 2.85;
+      document.querySelectorAll('.presets button')[0].classList.add('active');
+    } else if (mode === 'narrow') {
+      gap = 1.15;
+      document.querySelectorAll('.presets button')[1].classList.add('active');
+    }
+    document.getElementById('sl-gap').value = gap;
+    updateUI();
+  };
+
+  window.triggerSnap = function() {
+    gap = 0.65;
+    document.getElementById('sl-gap').value = gap;
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    snapPulse = 1.0;
+    snapCount++;
+    document.getElementById('m-snaps').textContent = snapCount;
+    updateUI();
+  };
+
+  let isDragging = false, prevX = 0, rotY = 0.25;
+  wrap.addEventListener('pointerdown', e => { isDragging = true; prevX = e.clientX; });
+  window.addEventListener('pointerup', () => { isDragging = false; });
+  window.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    rotY += (e.clientX - prevX) * 0.008;
+    prevX = e.clientX;
+  });
+
+  window.addEventListener('resize', () => {
+    camera.aspect = wrap.clientWidth / wrap.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  });
+
+  function animate(t) {
+    requestAnimationFrame(animate);
+    const time = t * 0.001;
+    if (snapPulse > 0) snapPulse = Math.max(0, snapPulse - 0.025);
+
+    const halfGap = gap * 0.5;
+    const innerSpan = Math.max(0.18, halfGap - 0.08);
+    const stateEl = document.getElementById('m-state');
+    const dotEl = document.getElementById('hud-dot');
+    const hudText = document.getElementById('hud-text');
+    const fill = document.getElementById('pr-fill');
+
+    if (snapPulse > 0.25) {
+      stateEl.textContent = 'BOUNDARY SNAP';
+      stateEl.style.color = '#f59e0b';
+      dotEl.style.background = '#f59e0b';
+      fill.style.background = '#f59e0b';
+      hudText.textContent = 'Narrow Boundary &bull; Maximum Mode Exclusion';
+    } else if (gap < 1.35) {
+      stateEl.textContent = 'CAVITY EXCLUDED';
+      stateEl.style.color = '#38bdf8';
+      dotEl.style.background = '#38bdf8';
+      fill.style.background = '#38bdf8';
+      hudText.textContent = 'Conducting Plates &bull; Long Modes Filtered Out';
+    } else {
+      stateEl.textContent = 'BROAD SPECTRUM';
+      stateEl.style.color = '#94a3b8';
+      dotEl.style.background = '#94a3b8';
+      fill.style.background = '#38bdf8';
+      hudText.textContent = 'Wide Separation &bull; More Modes Permitted';
+    }
+
+    outerNodes.forEach(n => {
+      const jitter = 0.06 * Math.sin(time * 4.2 + n.phase);
+      n.mesh.position.x = n.side * (halfGap + n.baseXOffset + jitter);
+      n.mesh.position.y = n.y + 0.05 * Math.cos(time * 3.5 + n.phase);
+      n.mesh.position.z = n.z;
+
+      const inSlice = Math.abs(n.z - sliceZ) < 0.35;
+      if (snapPulse > 0.2) {
+        n.mesh.material.color.setHex(0xf59e0b);
+        n.mesh.material.emissive.setHex(0xb45309);
+        n.mesh.material.emissiveIntensity = 0.85;
+        n.mesh.material.opacity = 0.95;
+      } else {
+        n.mesh.material.color.setHex(inSlice ? 0x22d3ee : 0x38bdf8);
+        n.mesh.material.emissive.setHex(0x0284c7);
+        n.mesh.material.emissiveIntensity = inSlice ? 0.85 : 0.35;
+        n.mesh.material.opacity = inSlice ? 1.0 : 0.72;
+      }
+    });
+
+    modeChannels.forEach(m => {
+      const posAttr = m.waveGeo.getAttribute('position');
+      const inSlice = Math.abs(m.z - sliceZ) < 0.35;
+      const amp = m.allowed ? Math.min(0.14, innerSpan * 0.22) : 0.025;
+
+      for (let s = 0; s <= segCount; s++) {
+        const u = s / segCount; // 0..1 across gap
+        const x = -innerSpan + u * (innerSpan * 2);
+        // Zero nodes at both conducting plates (sin(n * pi * u))
+        const standing = Math.sin(m.modeNum * Math.PI * u) * Math.cos(time * (2.2 + m.modeNum * 0.3) + m.phase) * amp;
+        const zWarp = Math.sin(m.modeNum * Math.PI * u) * Math.sin(time * (2.2 + m.modeNum * 0.3) + m.phase) * (amp * 0.65);
+        posAttr.setXYZ(s, x, m.y + standing, m.z + zWarp);
+      }
+      posAttr.needsUpdate = true;
+
+      const peakX = Math.sin(time * (2.2 + m.modeNum * 0.3) + m.phase) * (innerSpan * 0.5);
+      m.nodeMesh.position.set(peakX, m.y, m.z);
+
+      if (m.allowed) {
+        m.waveMat.color.setHex(inSlice ? 0x22d3ee : 0x38bdf8);
+        m.waveMat.opacity = inSlice ? 1.0 : 0.82;
+        m.nodeMesh.material.color.setHex(inSlice ? 0x22d3ee : 0x38bdf8);
+        m.nodeMesh.material.emissive.setHex(0x0891b2);
+        m.nodeMesh.material.emissiveIntensity = inSlice ? 0.9 : 0.5;
+        m.nodeMesh.material.opacity = inSlice ? 1.0 : 0.9;
+        m.nodeMesh.scale.setScalar(inSlice ? 1.2 : 0.95);
+      } else {
+        m.waveMat.color.setHex(0x334155);
+        m.waveMat.opacity = 0.16;
+        m.nodeMesh.material.color.setHex(0x334155);
+        m.nodeMesh.material.emissive.setHex(0x000000);
+        m.nodeMesh.material.emissiveIntensity = 0.0;
+        m.nodeMesh.material.opacity = 0.18;
+        m.nodeMesh.scale.setScalar(0.6);
+      }
+    });
+
+    leftPlateMat.color.setHex(snapPulse > 0.2 ? 0xf59e0b : 0x38bdf8);
+    rightPlateMat.color.setHex(snapPulse > 0.2 ? 0xf59e0b : 0x38bdf8);
+
+    assembly.rotation.y = rotY + Math.sin(time * 0.35) * 0.18;
+    renderer.render(scene, camera);
+  }
+
+  updateUI();
+  animate(0);
+</script>
+</body>
+</html>
