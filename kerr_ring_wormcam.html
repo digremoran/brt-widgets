@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kerr Ring Geometry: Spin, Ergosphere &amp; Worm-Cam Throat</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0b0e14;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 20px;
+    background: #111622;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.3px; color: #f8fafc; }
+  header span { font-size: 12px; color: #94a3b8; }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px 20px;
+    background: #0f131d;
+    border-bottom: 1px solid #1e293b;
+  }
+  .metric-card {
+    background: #151b28;
+    border: 1px solid #222d42;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; }
+  .metric-val { font-size: 14px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #38bdf8; margin-top: 2px; }
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 240px;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hud-badge {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #38bdf8; transition: background 0.15s; }
+  .legend-hud {
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid #222d42;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 10px;
+    color: #94a3b8;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .leg-row { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+  .controls {
+    padding: 12px 20px;
+    background: #111622;
+    border-top: 1px solid #1e293b;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .slider-group { display: flex; flex-direction: column; gap: 4px; }
+  .slider-header { display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; }
+  input[type=range] { width: 100%; accent-color: #38bdf8; cursor: pointer; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  button:hover { border-color: #38bdf8; color: #fff; }
+  button.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kerr Ring Geometry: Spin, Ergosphere &amp; Worm-Cam Throat</h1>
+  <span>Rotating Spacetime &bull; Frame Dragging &amp; Ring Aperture &bull; Beyond Real Time</span>
+</header>
+
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-label">Spin Parameter (a/M)</div>
+    <div class="metric-val" id="m-spin">0.88</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Core Topology</div>
+    <div class="metric-val" id="m-topo">RING APERTURE</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Frame Dragging</div>
+    <div class="metric-val" id="m-drag">EXTREME VORTEX</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Viewpoint</div>
+    <div class="metric-val" id="m-cam">EXTERIOR ORBIT</div>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <div class="hud-badge"><span class="dot" id="hud-dot"></span><span id="hud-text">Kerr Metric &bull; Spin Smears Point Singularity into a Traversable Ring</span></div>
+  <div class="legend-hud">
+    <div class="leg-row"><span class="swatch" style="background:#38bdf8;"></span>Static Limit / Ergosphere</div>
+    <div class="leg-row"><span class="swatch" style="background:#22d3ee;"></span>Outer Event Horizon</div>
+    <div class="leg-row"><span class="swatch" style="background:#f59e0b;"></span>Kerr Ring Singularity</div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="slider-group">
+    <div class="slider-header">
+      <span>Dimensionless Spin (0 = Schwarzschild Point &rarr; 1 = Extremal Kerr)</span>
+      <span id="lbl-spin">0.88</span>
+    </div>
+    <input type="range" id="sl-spin" min="0.00" max="0.99" step="0.01" value="0.88">
+  </div>
+  <div class="slider-group">
+    <div class="slider-header">
+      <span>Tomographic Slice Plane (Polar Cut Y)</span>
+      <span id="lbl-slice">0.00</span>
+    </div>
+    <input type="range" id="sl-slice" min="-1.6" max="1.6" step="0.04" value="0.0">
+  </div>
+  <div class="presets">
+    <button onclick="setView('schwarz')">Static Point (a=0)</button>
+    <button onclick="setView('kerr')" class="active">Kerr Ring (a=0.88)</button>
+    <button onclick="setView('wormcam')">Worm-Cam Dive</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  const wrap = document.getElementById('canvas-wrap');
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0b0e14, 0.036);
+
+  const camera = new THREE.PerspectiveCamera(44, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  camera.position.set(0, 2.35, 6.4);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0b0e14);
+  wrap.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+  dirLight.position.set(5, 7, 6);
+  scene.add(dirLight);
+
+  const kerrGroup = new THREE.Group();
+  scene.add(kerrGroup);
+
+  // 1. Ergosphere (oblate spheroid wireframe — static limit)
+  const ergoGeo = new THREE.SphereGeometry(2.1, 32, 24);
+  const ergoMat = new THREE.MeshBasicMaterial({
+    color: 0x38bdf8,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.22
+  });
+  const ergoMesh = new THREE.Mesh(ergoGeo, ergoMat);
+  kerrGroup.add(ergoMesh);
+
+  // 2. Outer Event Horizon (inner oblate shell)
+  const horGeo = new THREE.SphereGeometry(1.45, 28, 20);
+  const horMat = new THREE.MeshPhongMaterial({
+    color: 0x0e7490,
+    emissive: 0x164e63,
+    emissiveIntensity: 0.55,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.34
+  });
+  const horMesh = new THREE.Mesh(horGeo, horMat);
+  kerrGroup.add(horMesh);
+
+  // 3. Kerr Ring Singularity (expands from radius ~0 at a=0 to full glowing ring at a->1)
+  const ringGeo = new THREE.TorusGeometry(1.0, 0.055, 20, 72);
+  ringGeo.rotateX(Math.PI / 2);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xf59e0b,
+    transparent: true,
+    opacity: 0.95
+  });
+  const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+  kerrGroup.add(ringMesh);
+
+  // Halo around Kerr Ring
+  const haloGeo = new THREE.TorusGeometry(1.0, 0.14, 16, 72);
+  haloGeo.rotateX(Math.PI / 2);
+  const haloMat = new THREE.MeshBasicMaterial({
+    color: 0xfbbf24,
+    transparent: true,
+    opacity: 0.22
+  });
+  const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+  kerrGroup.add(haloMesh);
+
+  // 4. Frame-dragging spacetime streamlines swirling into and through the ring aperture
+  const streamlines = [];
+  const segs = 40;
+  for (let i = 0; i < 18; i++) {
+    const pts = [];
+    for (let s = 0; s <= segs; s++) pts.push(new THREE.Vector3(0, 0, 0));
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({
+      color: i % 3 === 0 ? 0xf59e0b : 0x22d3ee,
+      transparent: true,
+      opacity: 0.65
+    });
+    const line = new THREE.Line(geo, mat);
+    kerrGroup.add(line);
+    streamlines.push({
+      geo,
+      mat,
+      theta0: (i / 18) * Math.PI * 2,
+      hemi: i % 2 === 0 ? 1 : -1,
+      rOffset: 0.15 + (i % 4) * 0.22
+    });
+  }
+
+  // 5. Tomographic Horizontal Slice Plane (Y cut)
+  const sliceGeo = new THREE.PlaneGeometry(5.2, 5.2);
+  sliceGeo.rotateX(Math.PI / 2);
+  const sliceMat = new THREE.MeshBasicMaterial({
+    color: 0x22d3ee,
+    transparent: true,
+    opacity: 0.08,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  const slicePlane = new THREE.Mesh(sliceGeo, sliceMat);
+  slicePlane.add(new THREE.LineLoop(
+    new THREE.EdgesGeometry(sliceGeo),
+    new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.6 })
+  ));
+  kerrGroup.add(slicePlane);
+
+  let spin = 0.88;
+  let sliceY = 0.0;
+  let wormCamMode = false;
+
+  function updateUI() {
+    document.getElementById('lbl-spin').textContent = spin.toFixed(2);
+    document.getElementById('lbl-slice').textContent = sliceY.toFixed(2);
+    document.getElementById('m-spin').textContent = spin.toFixed(2);
+    slicePlane.position.y = sliceY;
+
+    const topoEl = document.getElementById('m-topo');
+    const dragEl = document.getElementById('m-drag');
+    const camEl = document.getElementById('m-cam');
+    const dotEl = document.getElementById('hud-dot');
+    const hudText = document.getElementById('hud-text');
+
+    if (spin < 0.12) {
+      topoEl.textContent = 'POINT SINGULARITY';
+      topoEl.style.color = '#94a3b8';
+      dragEl.textContent = 'STATIC (NO DRAG)';
+      dotEl.style.background = '#94a3b8';
+      hudText.textContent = 'Schwarzschild Limit (a = 0) • Pinched Point Singularity';
+    } else if (spin < 0.65) {
+      topoEl.textContent = 'OBLATE RING';
+      topoEl.style.color = '#38bdf8';
+      dragEl.textContent = 'MODERATE DRAG';
+      dotEl.style.background = '#38bdf8';
+      hudText.textContent = 'Rotating Kerr Metric • Ergosphere Separates from Horizon';
+    } else {
+      topoEl.textContent = 'RING APERTURE';
+      topoEl.style.color = '#f59e0b';
+      dragEl.textContent = 'EXTREME VORTEX';
+      dotEl.style.background = '#f59e0b';
+      hudText.textContent = 'High-Spin Kerr Ring • Open Throat & Frame-Dragging Vortex';
+    }
+
+    camEl.textContent = wormCamMode ? 'WORM-CAM AXIAL' : 'EXTERIOR ORBIT';
+    camEl.style.color = wormCamMode ? '#22d3ee' : '#38bdf8';
+  }
+
+  document.getElementById('sl-spin').addEventListener('input', e => {
+    spin = parseFloat(e.target.value);
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    updateUI();
+  });
+
+  document.getElementById('sl-slice').addEventListener('input', e => {
+    sliceY = parseFloat(e.target.value);
+    updateUI();
+  });
+
+  window.setView = function(mode) {
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    if (mode === 'schwarz') {
+      spin = 0.00;
+      wormCamMode = false;
+      document.querySelectorAll('.presets button')[0].classList.add('active');
+    } else if (mode === 'kerr') {
+      spin = 0.88;
+      wormCamMode = false;
+      document.querySelectorAll('.presets button')[1].classList.add('active');
+    } else if (mode === 'wormcam') {
+      spin = 0.95;
+      wormCamMode = true;
+      document.querySelectorAll('.presets button')[2].classList.add('active');
+    }
+    document.getElementById('sl-spin').value = spin;
+    updateUI();
+  };
+
+  let isDragging = false, prevX = 0, prevY = 0, rotY = 0.0, rotX = 0.0;
+  wrap.addEventListener('pointerdown', e => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+  window.addEventListener('pointerup', () => { isDragging = false; });
+  window.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    rotY += (e.clientX - prevX) * 0.008;
+    rotX = Math.max(-0.8, Math.min(0.8, rotX + (e.clientY - prevY) * 0.006));
+    prevX = e.clientX;
+    prevY = e.clientY;
+  });
+
+  window.addEventListener('resize', () => {
+    camera.aspect = wrap.clientWidth / wrap.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  });
+
+  function animate(t) {
+    requestAnimationFrame(animate);
+    const time = t * 0.001;
+
+    // Oblate flattening of Ergosphere & Event Horizon as spin a/M increases
+    const oblateY = 1.0 - 0.36 * spin;
+    ergoMesh.scale.set(1.0 + 0.12 * spin, oblateY, 1.0 + 0.12 * spin);
+    ergoMesh.rotation.y = time * (0.15 + spin * 1.1);
+
+    // Event horizon shrinks slightly with spin while ring singularity expands
+    const horScale = 1.0 - 0.34 * spin;
+    horMesh.scale.set(horScale, horScale * oblateY, horScale);
+    horMesh.rotation.y = -time * (0.25 + spin * 1.6);
+
+    // Ring singularity radius scales directly with spin parameter a
+    const ringRadius = Math.max(0.04, spin * 1.05);
+    ringMesh.scale.set(ringRadius, 1.0, ringRadius);
+    haloMesh.scale.set(ringRadius, 1.0, ringRadius);
+    ringMesh.rotation.y = time * (0.5 + spin * 3.0);
+
+    // Highlight ring if tomographic slice cuts near equatorial plane
+    const nearEquator = Math.abs(sliceY) < 0.28;
+    ringMat.color.setHex(nearEquator ? 0xfef08a : 0xf59e0b);
+
+    // Update frame-dragging streamlines spiraling around and through the ring throat
+    streamlines.forEach(st => {
+      const pos = st.geo.getAttribute('position');
+      for (let s = 0; s <= segs; s++) {
+        const u = (s / segs) * 2.0 - 1.0; // -1 (bottom) to +1 (top)
+        const absU = Math.abs(u);
+        // Throat radius narrows near equatorial plane (u=0) to thread inside the Kerr ring
+        const throatR = (ringRadius * 0.62) + absU * absU * (1.75 + st.rOffset);
+        // Frame-dragging twist proportional to spin and proximity to equatorial plane
+        const dragTwist = spin * (4.2 / (0.35 + absU * 1.8));
+        const angle = st.theta0 + dragTwist + time * (0.4 + spin * 2.2) - absU * 1.1;
+        const y = u * 2.25;
+        pos.setXYZ(s, Math.cos(angle) * throatR, y, Math.sin(angle) * throatR);
+      }
+      pos.needsUpdate = true;
+      st.mat.opacity = 0.25 + spin * 0.55;
+    });
+
+    // Camera transition: Exterior orbit vs Worm-Cam axial dive looking straight down the Kerr throat
+    const targetPos = wormCamMode
+      ? new THREE.Vector3(Math.sin(time * 0.45) * 0.35, 3.25 + Math.sin(time * 0.7) * 0.35, 0.65)
+      : new THREE.Vector3(0, 2.35, 6.4);
+    camera.position.lerp(targetPos, 0.06);
+    camera.lookAt(0, 0, 0);
+
+    kerrGroup.rotation.y = rotY;
+    kerrGroup.rotation.x = rotX;
+    renderer.render(scene, camera);
+  }
+
+  updateUI();
+  animate(0);
+</script>
+</body>
+</html>
