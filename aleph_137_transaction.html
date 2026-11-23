@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Aleph: 137 Coupling &amp; It-From-Bit Transaction</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0b0e14;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 20px;
+    background: #111622;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.3px; color: #f8fafc; }
+  header span { font-size: 12px; color: #94a3b8; }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px 20px;
+    background: #0f131d;
+    border-bottom: 1px solid #1e293b;
+  }
+  .metric-card {
+    background: #151b28;
+    border: 1px solid #222d42;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; }
+  .metric-val { font-size: 14px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #38bdf8; margin-top: 2px; }
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 240px;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hud-badge {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #38bdf8; transition: background 0.15s; }
+  .lock-hud {
+    position: absolute;
+    bottom: 12px;
+    right: 16px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 8px 10px;
+    width: 158px;
+  }
+  .lk-title { font-size: 9px; text-transform: uppercase; color: #94a3b8; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .lk-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #1e293b;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .lk-bar-fill {
+    height: 100%;
+    width: 85%;
+    background: #38bdf8;
+    transition: width 0.08s linear, background 0.15s;
+  }
+  .controls {
+    padding: 12px 20px;
+    background: #111622;
+    border-top: 1px solid #1e293b;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .slider-group { display: flex; flex-direction: column; gap: 4px; }
+  .slider-header { display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; }
+  input[type=range] { width: 100%; accent-color: #38bdf8; cursor: pointer; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  button:hover { border-color: #38bdf8; color: #fff; }
+  button.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>The Aleph: 137 Coupling &amp; It-From-Bit</h1>
+  <span>c-Bus Handshake &bull; Analog Boson to Digital Quanta &bull; Beyond Real Time</span>
+</header>
+
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-label">Protocol Header</div>
+    <div class="metric-val" id="m-header">137-ID</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Bus Velocity</div>
+    <div class="metric-val" id="m-bus">c (TIMELESS)</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Handshake State</div>
+    <div class="metric-val" id="m-state">LOCKED</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Quanta Receipts</div>
+    <div class="metric-val" id="m-receipts">0</div>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <div class="hud-badge"><span class="dot" id="hud-dot"></span><span id="hud-text">Aleph Node &bull; Analog Wave &rarr; 137 Handshake &rarr; Digital Quanta</span></div>
+  <div class="lock-hud">
+    <div class="lk-title"><span>137 Resonance</span><span id="lk-pct">88%</span></div>
+    <div class="lk-bar-bg"><div class="lk-bar-fill" id="lk-fill"></div></div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="slider-group">
+    <div class="slider-header">
+      <span>Coupling Tuning (137-ID Resonance)</span>
+      <span id="lbl-tune">0.88</span>
+    </div>
+    <input type="range" id="sl-tune" min="0.00" max="1.00" step="0.01" value="0.88">
+  </div>
+  <div class="slider-group">
+    <div class="slider-header">
+      <span>Tomographic Slice Plane (Axial Z)</span>
+      <span id="lbl-slice">0.00</span>
+    </div>
+    <input type="range" id="sl-slice" min="-1.8" max="1.8" step="0.04" value="0.0">
+  </div>
+  <div class="presets">
+    <button onclick="setMode('boson')">Wave Stream</button>
+    <button onclick="setMode('aleph')" class="active">137 Lock</button>
+    <button onclick="emitReceipt()">Absorb Quanta</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  const wrap = document.getElementById('canvas-wrap');
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0b0e14, 0.04);
+
+  const camera = new THREE.PerspectiveCamera(42, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  camera.position.set(0, 1.1, 8.0);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0b0e14);
+  wrap.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.15);
+  dirLight.position.set(4, 7, 6);
+  scene.add(dirLight);
+
+  const group = new THREE.Group();
+  scene.add(group);
+
+  // Central Aleph 137-ID polyhedral hub (all angles converging at one point)
+  const alephGeo = new THREE.IcosahedronGeometry(0.72, 1);
+  const alephMat = new THREE.MeshPhongMaterial({
+    color: 0x22d3ee,
+    emissive: 0x0891b2,
+    emissiveIntensity: 0.65,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.9
+  });
+  const alephCore = new THREE.Mesh(alephGeo, alephMat);
+  group.add(alephCore);
+
+  const innerCoreGeo = new THREE.OctahedronGeometry(0.32, 0);
+  const innerCoreMat = new THREE.MeshPhongMaterial({
+    color: 0xf59e0b,
+    emissive: 0xb45309,
+    emissiveIntensity: 0.7,
+    transparent: true,
+    opacity: 0.9
+  });
+  const innerCore = new THREE.Mesh(innerCoreGeo, innerCoreMat);
+  group.add(innerCore);
+
+  // Incoming analog wave filaments on the left (-3.6 to -0.8)
+  const incomingWaves = [];
+  const wSegs = 28;
+  for (let i = 0; i < 6; i++) {
+    const pts = [];
+    for (let s = 0; s <= wSegs; s++) pts.push(new THREE.Vector3(0, 0, 0));
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
+    const line = new THREE.Line(geo, mat);
+    group.add(line);
+    incomingWaves.push({
+      geo,
+      mat,
+      y0: ((i / 5) - 0.5) * 2.2,
+      z0: ((i % 3) - 1) * 0.75,
+      phase: i * 0.8
+    });
+  }
+
+  // Outgoing digital quanta packets on the right (+0.9 to +3.7)
+  const quantaPackets = [];
+  const qGeo = new THREE.BoxGeometry(0.24, 0.24, 0.24);
+  for (let j = 0; j < 18; j++) {
+    const mat = new THREE.MeshPhongMaterial({
+      color: 0xf59e0b,
+      emissive: 0xb45309,
+      emissiveIntensity: 0.55,
+      transparent: true,
+      opacity: 0.9
+    });
+    const m = new THREE.Mesh(qGeo, mat);
+    m.add(new THREE.LineSegments(
+      new THREE.EdgesGeometry(qGeo),
+      new THREE.LineBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0.6 })
+    ));
+    group.add(m);
+    quantaPackets.push({
+      mesh: m,
+      laneY: (((j % 6) / 5) - 0.5) * 2.2,
+      laneZ: ((Math.floor(j / 6) % 3) - 1) * 0.75,
+      offset: (j % 3) / 3,
+      bit: j % 2
+    });
+  }
+
+  // Tomographic Z-slice ring/plane
+  const sliceGeo = new THREE.PlaneGeometry(7.8, 3.2);
+  const sliceMat = new THREE.MeshBasicMaterial({
+    color: 0x22d3ee,
+    transparent: true,
+    opacity: 0.08,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  const slicePlane = new THREE.Mesh(sliceGeo, sliceMat);
+  slicePlane.add(new THREE.LineLoop(
+    new THREE.EdgesGeometry(sliceGeo),
+    new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.6 })
+  ));
+  group.add(slicePlane);
+
+  let tune = 0.88;
+  let sliceZ = 0.0;
+  let flash = 0.0;
+  let receipts = 0;
+
+  function updateUI() {
+    const locked = tune >= 0.65;
+    const pct = Math.round(tune * 100);
+    document.getElementById('lbl-tune').textContent = tune.toFixed(2);
+    document.getElementById('lbl-slice').textContent = sliceZ.toFixed(2);
+    document.getElementById('lk-pct').textContent = `${pct}%`;
+    document.getElementById('lk-fill').style.width = `${pct}%`;
+    slicePlane.position.z = sliceZ;
+
+    const stateEl = document.getElementById('m-state');
+    const dotEl = document.getElementById('hud-dot');
+    const hudText = document.getElementById('hud-text');
+    const fill = document.getElementById('lk-fill');
+
+    if (flash > 0.25) {
+      stateEl.textContent = 'RECEIPT LOGGED';
+      stateEl.style.color = '#f59e0b';
+      dotEl.style.background = '#f59e0b';
+      fill.style.background = '#f59e0b';
+      hudText.textContent = '137-ID Handshake Complete &bull; Quanta Absorbed';
+    } else if (locked) {
+      stateEl.textContent = 'LOCKED (137)';
+      stateEl.style.color = '#38bdf8';
+      dotEl.style.background = '#38bdf8';
+      fill.style.background = '#38bdf8';
+      hudText.textContent = 'Aleph Node &bull; Analog Wave &rarr; 137 Handshake &rarr; Digital Quanta';
+    } else {
+      stateEl.textContent = 'UNCOUPLED';
+      stateEl.style.color = '#94a3b8';
+      dotEl.style.background = '#64748b';
+      fill.style.background = '#64748b';
+      hudText.textContent = 'Off-Resonance &bull; Weak A-D Transaction Lock';
+    }
+  }
+
+  document.getElementById('sl-tune').addEventListener('input', e => {
+    tune = parseFloat(e.target.value);
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    updateUI();
+  });
+
+  document.getElementById('sl-slice').addEventListener('input', e => {
+    sliceZ = parseFloat(e.target.value);
+    updateUI();
+  });
+
+  window.setMode = function(mode) {
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    if (mode === 'boson') {
+      tune = 0.25;
+      document.querySelectorAll('.presets button')[0].classList.add('active');
+    } else if (mode === 'aleph') {
+      tune = 0.88;
+      document.querySelectorAll('.presets button')[1].classList.add('active');
+    }
+    document.getElementById('sl-tune').value = tune;
+    updateUI();
+  };
+
+  window.emitReceipt = function() {
+    flash = 1.0;
+    receipts++;
+    document.getElementById('m-receipts').textContent = receipts;
+    quantaPackets.forEach(q => { q.bit = Math.random() > 0.45 ? 1 : 0; });
+    updateUI();
+  };
+
+  let isDragging = false, prevX = 0, rotY = 0.15;
+  wrap.addEventListener('pointerdown', e => { isDragging = true; prevX = e.clientX; });
+  window.addEventListener('pointerup', () => { isDragging = false; });
+  window.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    rotY += (e.clientX - prevX) * 0.008;
+    prevX = e.clientX;
+  });
+
+  window.addEventListener('resize', () => {
+    camera.aspect = wrap.clientWidth / wrap.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  });
+
+  let lastReceiptCycle = 0;
+  function animate(t) {
+    requestAnimationFrame(animate);
+    const time = t * 0.001;
+    if (flash > 0) flash = Math.max(0, flash - 0.025);
+
+    const locked = tune >= 0.65;
+    const speed = 0.6 + tune * 1.4;
+    const cycle = (time * speed * 0.45) % 1.0;
+    if (locked && cycle < lastReceiptCycle) {
+      receipts++;
+      document.getElementById('m-receipts').textContent = receipts;
+    }
+    lastReceiptCycle = cycle;
+
+    alephCore.rotation.y = time * (0.5 + tune);
+    alephCore.rotation.x = time * 0.35;
+    innerCore.rotation.y = -time * 1.6;
+    innerCore.scale.setScalar(0.85 + 0.25 * tune + 0.2 * flash);
+
+    incomingWaves.forEach(w => {
+      const pos = w.geo.getAttribute('position');
+      const inSlice = Math.abs(w.z0 - sliceZ) < 0.45;
+      for (let s = 0; s <= wSegs; s++) {
+        const u = s / wSegs;
+        const x = -3.65 + u * 2.8;
+        const y = w.y0 + Math.sin(u * Math.PI * 3.0 - time * 4.2 + w.phase) * 0.22;
+        const z = w.z0 + Math.cos(u * Math.PI * 2.0 - time * 2.8 + w.phase) * 0.12;
+        pos.setXYZ(s, x, y, z);
+      }
+      pos.needsUpdate = true;
+      w.mat.color.setHex(inSlice ? 0x22d3ee : 0x38bdf8);
+      w.mat.opacity = inSlice ? 0.95 : 0.72;
+    });
+
+    quantaPackets.forEach(q => {
+      const prog = ((time * speed * 0.45) + q.offset) % 1.0;
+      const x = 0.85 + prog * 2.85;
+      const inSlice = Math.abs(q.laneZ - sliceZ) < 0.45;
+      q.mesh.position.set(x, q.laneY, q.laneZ);
+      q.mesh.rotation.y = time * 2.0 + q.offset * 6.0;
+
+      if (!locked) {
+        q.mesh.material.color.setHex(0x334155);
+        q.mesh.material.emissive.setHex(0x000000);
+        q.mesh.material.emissiveIntensity = 0.0;
+        q.mesh.material.opacity = 0.25;
+        q.mesh.scale.setScalar(0.7);
+      } else if (q.bit === 1) {
+        q.mesh.material.color.setHex(flash > 0.2 ? 0xfef08a : 0xf59e0b);
+        q.mesh.material.emissive.setHex(0xb45309);
+        q.mesh.material.emissiveIntensity = inSlice ? 0.95 : 0.55;
+        q.mesh.material.opacity = inSlice ? 1.0 : 0.88;
+        q.mesh.scale.setScalar(inSlice ? 1.2 : 0.95);
+      } else {
+        q.mesh.material.color.setHex(0x1e293b);
+        q.mesh.material.emissive.setHex(0x000000);
+        q.mesh.material.emissiveIntensity = 0.0;
+        q.mesh.material.opacity = 0.35;
+        q.mesh.scale.setScalar(0.75);
+      }
+    });
+
+    group.rotation.y = rotY + Math.sin(time * 0.3) * 0.12;
+    renderer.render(scene, camera);
+  }
+
+  updateUI();
+  animate(0);
+</script>
+</body>
+</html>
