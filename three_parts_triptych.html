@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3-Part Soliloquy: Analog / The Blur / Digital</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0b0e14;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 20px;
+    background: #111622;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.3px; color: #f8fafc; }
+  header span { font-size: 12px; color: #94a3b8; }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 10px 20px;
+    background: #0f131d;
+    border-bottom: 1px solid #1e293b;
+  }
+  .metric-card {
+    background: #151b28;
+    border: 1px solid #222d42;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; }
+  .metric-val { font-size: 14px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #38bdf8; margin-top: 2px; }
+  #canvas-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 240px;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hud-badge {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #38bdf8; transition: background 0.15s; }
+  .panel-labels {
+    position: absolute;
+    bottom: 12px;
+    left: 16px;
+    right: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    pointer-events: none;
+  }
+  .panel-tag {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid #222d42;
+    border-radius: 6px;
+    padding: 6px 10px;
+    text-align: center;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .panel-tag.active-zone {
+    border-color: #38bdf8;
+  }
+  .panel-tag.active-blur {
+    border-color: #22d3ee;
+  }
+  .panel-tag.active-digital {
+    border-color: #f59e0b;
+  }
+  .pt-title { font-size: 11px; font-weight: 600; color: #f8fafc; letter-spacing: 0.4px; }
+  .pt-sub { font-size: 9px; color: #94a3b8; margin-top: 2px; text-transform: uppercase; }
+  .controls {
+    padding: 12px 20px;
+    background: #111622;
+    border-top: 1px solid #1e293b;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .slider-group { display: flex; flex-direction: column; gap: 4px; }
+  .slider-header { display: flex; justify-content: space-between; font-size: 12px; color: #cbd5e1; }
+  input[type=range] { width: 100%; accent-color: #38bdf8; cursor: pointer; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  button {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 5px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  button:hover { border-color: #38bdf8; color: #fff; }
+  button.active { background: #0284c7; border-color: #38bdf8; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>In 3 Parts: Analog / The Blur / Digital</h1>
+  <span>Timeless c-Boundary &amp; A-D / D-A Transaction &bull; Beyond Real Time</span>
+</header>
+
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-label">Active Sector</div>
+    <div class="metric-val" id="m-sector">THE BLUR (c)</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Carrier / Matter Mode</div>
+    <div class="metric-val" id="m-carrier">BOSON &harr; QUANTA</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Clock Regime</div>
+    <div class="metric-val" id="m-clock">TIMELESS (dt = 0)</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Transactions</div>
+    <div class="metric-val" id="m-tx">0</div>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <div class="hud-badge"><span class="dot" id="hud-dot"></span><span id="hud-text">3-Part Triptych &bull; Continuous Field &rarr; c-Threshold &rarr; Discrete Quanta</span></div>
+  <div class="panel-labels">
+    <div class="panel-tag" id="tag-1">
+      <div class="pt-title">I. ANALOG FIELD</div>
+      <div class="pt-sub">Continuous Wave &bull; Bosonic Carrier</div>
+    </div>
+    <div class="panel-tag active-blur" id="tag-2">
+      <div class="pt-title">II. THE BLUR (c)</div>
+      <div class="pt-sub">Timeless Transition &bull; A-D / D-A Pivot</div>
+    </div>
+    <div class="panel-tag" id="tag-3">
+      <div class="pt-title">III. DIGITAL OVERRIDE</div>
+      <div class="pt-sub">Discrete Quanta &bull; Leptonic Matter</div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="slider-group">
+    <div class="slider-header">
+      <span>Triptych Phase Sweep (Analog &rarr; Blur &rarr; Digital)</span>
+      <span id="lbl-phase">0.50</span>
+    </div>
+    <input type="range" id="sl-phase" min="0.00" max="1.00" step="0.01" value="0.50">
+  </div>
+  <div class="slider-group">
+    <div class="slider-header">
+      <span>Tomographic Slice Plane (Cross-Section Z)</span>
+      <span id="lbl-slice">0.00</span>
+    </div>
+    <input type="range" id="sl-slice" min="-1.6" max="1.6" step="0.04" value="0.0">
+  </div>
+  <div class="presets">
+    <button onclick="setStage('analog')">I. Analog</button>
+    <button onclick="setStage('blur')" class="active">II. The Blur</button>
+    <button onclick="setStage('digital')">III. Digital</button>
+    <button onclick="triggerPulse()">Fire Quanta</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  const wrap = document.getElementById('canvas-wrap');
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0b0e14, 0.038);
+
+  const camera = new THREE.PerspectiveCamera(42, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  camera.position.set(0, 1.15, 8.2);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0b0e14);
+  wrap.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.15);
+  dirLight.position.set(4, 7, 6);
+  scene.add(dirLight);
+
+  const world = new THREE.Group();
+  scene.add(world);
+
+  // Three triptych frames: Left (-2.85), Center (0.0), Right (+2.85)
+  const frameGeo = new THREE.BoxGeometry(2.35, 3.1, 2.35);
+  const frameEdges = new THREE.EdgesGeometry(frameGeo);
+  const panelX = [-2.85, 0.0, 2.85];
+  const frameMats = [];
+
+  panelX.forEach((px, idx) => {
+    const mat = new THREE.LineBasicMaterial({
+      color: idx === 1 ? 0x22d3ee : 0x334155,
+      transparent: true,
+      opacity: idx === 1 ? 0.9 : 0.45
+    });
+    const box = new THREE.LineSegments(frameEdges, mat);
+    box.position.set(px, 0, 0);
+    world.add(box);
+    frameMats.push(mat);
+  });
+
+  // PANEL I (Left, X = -2.85): Continuous Analog Wave Ribbons
+  const analogWaves = [];
+  const waveSegs = 36;
+  for (let w = 0; w < 7; w++) {
+    const pts = [];
+    for (let s = 0; s <= waveSegs; s++) pts.push(new THREE.Vector3(0, 0, 0));
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
+    const line = new THREE.Line(geo, mat);
+    world.add(line);
+    analogWaves.push({
+      line,
+      geo,
+      mat,
+      yBase: ((w / 6) - 0.5) * 2.1,
+      zBase: ((w % 3) - 1) * 0.65,
+      phase: w * 0.75
+    });
+  }
+
+  // PANEL II (Center, X = 0): The Blur — Speed-of-Light Transition Vortex & Aperture Ring
+  const blurRingGeo = new THREE.TorusGeometry(0.95, 0.035, 16, 64);
+  const blurRingMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.85 });
+  const blurRing = new THREE.Mesh(blurRingGeo, blurRingMat);
+  world.add(blurRing);
+
+  const blurInnerGeo = new THREE.TorusGeometry(0.55, 0.025, 16, 48);
+  const blurInnerMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.75 });
+  const blurInner = new THREE.Mesh(blurInnerGeo, blurInnerMat);
+  world.add(blurInner);
+
+  const blurSparks = [];
+  const sparkGeo = new THREE.SphereGeometry(0.065, 10, 10);
+  for (let i = 0; i < 36; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: i % 2 === 0 ? 0x22d3ee : 0xf59e0b,
+      transparent: true,
+      opacity: 0.85
+    });
+    const m = new THREE.Mesh(sparkGeo, mat);
+    world.add(m);
+    blurSparks.push({
+      mesh: m,
+      angle: (i / 36) * Math.PI * 2,
+      rad: 0.25 + (i % 6) * 0.14,
+      zOff: ((i % 5) - 2) * 0.35,
+      speed: 1.8 + (i % 4) * 0.45
+    });
+  }
+
+  // PANEL III (Right, X = +2.85): 3x3x3 Discrete Digital Quanta Voxel Matrix
+  const digitalVoxels = [];
+  const voxGeo = new THREE.BoxGeometry(0.32, 0.32, 0.32);
+  for (let ix = -1; ix <= 1; ix++) {
+    for (let iy = -1; iy <= 1; iy++) {
+      for (let iz = -1; iz <= 1; iz++) {
+        const mat = new THREE.MeshPhongMaterial({
+          color: 0xf59e0b,
+          emissive: 0xb45309,
+          emissiveIntensity: 0.45,
+          transparent: true,
+          opacity: 0.85
+        });
+        const mesh = new THREE.Mesh(voxGeo, mat);
+        mesh.position.set(2.85 + ix * 0.62, iy * 0.62, iz * 0.62);
+        const edge = new THREE.LineSegments(
+          new THREE.EdgesGeometry(voxGeo),
+          new THREE.LineBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0.55 })
+        );
+        mesh.add(edge);
+        world.add(mesh);
+        digitalVoxels.push({
+          mesh,
+          ix,
+          iy,
+          iz,
+          bit: ((ix + iy + iz + 6) % 2 === 0) ? 1 : 0
+        });
+      }
+    }
+  }
+
+  // Traveling A-D / D-A transaction packet sweeping across all 3 panels
+  const packetGeo = new THREE.SphereGeometry(0.13, 16, 16);
+  const packetMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const packet = new THREE.Mesh(packetGeo, packetMat);
+  world.add(packet);
+
+  // Tomographic Z-slice plane spanning the triptych
+  const sliceGeo = new THREE.PlaneGeometry(8.5, 3.4);
+  const sliceMat = new THREE.MeshBasicMaterial({
+    color: 0x22d3ee,
+    transparent: true,
+    opacity: 0.08,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  const slicePlane = new THREE.Mesh(sliceGeo, sliceMat);
+  slicePlane.add(new THREE.LineLoop(
+    new THREE.EdgesGeometry(sliceGeo),
+    new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.6 })
+  ));
+  world.add(slicePlane);
+
+  let phaseVal = 0.50;
+  let sliceZ = 0.0;
+  let quantaFlash = 0.0;
+  let txCount = 0;
+
+  function updateUI() {
+    document.getElementById('lbl-phase').textContent = phaseVal.toFixed(2);
+    document.getElementById('lbl-slice').textContent = sliceZ.toFixed(2);
+    slicePlane.position.z = sliceZ;
+
+    const t1 = document.getElementById('tag-1');
+    const t2 = document.getElementById('tag-2');
+    const t3 = document.getElementById('tag-3');
+    t1.className = 'panel-tag';
+    t2.className = 'panel-tag';
+    t3.className = 'panel-tag';
+
+    const secEl = document.getElementById('m-sector');
+    const carEl = document.getElementById('m-carrier');
+    const clkEl = document.getElementById('m-clock');
+    const dotEl = document.getElementById('hud-dot');
+
+    if (phaseVal < 0.34) {
+      t1.classList.add('active-zone');
+      secEl.textContent = 'I. ANALOG FIELD';
+      secEl.style.color = '#38bdf8';
+      carEl.textContent = 'CONTINUOUS BOSON';
+      clkEl.textContent = 'WAVE PROPAGATION';
+      dotEl.style.background = '#38bdf8';
+      frameMats[0].color.setHex(0x38bdf8); frameMats[0].opacity = 0.95;
+      frameMats[1].color.setHex(0x334155); frameMats[1].opacity = 0.4;
+      frameMats[2].color.setHex(0x334155); frameMats[2].opacity = 0.4;
+    } else if (phaseVal <= 0.66) {
+      t2.classList.add('active-blur');
+      secEl.textContent = 'II. THE BLUR (c)';
+      secEl.style.color = '#22d3ee';
+      carEl.textContent = 'BOSON ↔ QUANTA';
+      clkEl.textContent = 'TIMELESS (dt = 0)';
+      dotEl.style.background = '#22d3ee';
+      frameMats[0].color.setHex(0x334155); frameMats[0].opacity = 0.45;
+      frameMats[1].color.setHex(0x22d3ee); frameMats[1].opacity = 0.95;
+      frameMats[2].color.setHex(0x334155); frameMats[2].opacity = 0.45;
+    } else {
+      t3.classList.add('active-digital');
+      secEl.textContent = 'III. DIGITAL OVERRIDE';
+      secEl.style.color = '#f59e0b';
+      carEl.textContent = 'DISCRETE LEPTON';
+      clkEl.textContent = 'CLOCKED MATTER';
+      dotEl.style.background = '#f59e0b';
+      frameMats[0].color.setHex(0x334155); frameMats[0].opacity = 0.4;
+      frameMats[1].color.setHex(0x334155); frameMats[1].opacity = 0.4;
+      frameMats[2].color.setHex(0xf59e0b); frameMats[2].opacity = 0.95;
+    }
+  }
+
+  document.getElementById('sl-phase').addEventListener('input', e => {
+    phaseVal = parseFloat(e.target.value);
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    updateUI();
+  });
+
+  document.getElementById('sl-slice').addEventListener('input', e => {
+    sliceZ = parseFloat(e.target.value);
+    updateUI();
+  });
+
+  window.setStage = function(stage) {
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    if (stage === 'analog') {
+      phaseVal = 0.16;
+      document.querySelectorAll('.presets button')[0].classList.add('active');
+    } else if (stage === 'blur') {
+      phaseVal = 0.50;
+      document.querySelectorAll('.presets button')[1].classList.add('active');
+    } else if (stage === 'digital') {
+      phaseVal = 0.84;
+      document.querySelectorAll('.presets button')[2].classList.add('active');
+    }
+    document.getElementById('sl-phase').value = phaseVal;
+    updateUI();
+  };
+
+  window.triggerPulse = function() {
+    quantaFlash = 1.0;
+    txCount++;
+    document.getElementById('m-tx').textContent = txCount;
+    digitalVoxels.forEach(v => {
+      v.bit = Math.random() > 0.45 ? 1 : 0;
+    });
+  };
+
+  let isDragging = false, prevX = 0, rotY = 0.0;
+  wrap.addEventListener('pointerdown', e => { isDragging = true; prevX = e.clientX; });
+  window.addEventListener('pointerup', () => { isDragging = false; });
+  window.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    rotY += (e.clientX - prevX) * 0.007;
+    prevX = e.clientX;
+  });
+
+  window.addEventListener('resize', () => {
+    camera.aspect = wrap.clientWidth / wrap.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  });
+
+  let prevCycle = 0;
+  function animate(t) {
+    requestAnimationFrame(animate);
+    const time = t * 0.001;
+    if (quantaFlash > 0) quantaFlash = Math.max(0, quantaFlash - 0.03);
+
+    // Continuous cycle 0..1 across triptych unless user holds slider at extreme
+    const cycle = (time * 0.22) % 1.0;
+    if (cycle < prevCycle) {
+      txCount++;
+      document.getElementById('m-tx').textContent = txCount;
+      digitalVoxels.forEach(v => {
+        v.bit = Math.random() > 0.45 ? 1 : 0;
+      });
+    }
+    prevCycle = cycle;
+
+    const activeX = -3.8 + phaseVal * 7.6;
+    packet.position.set(activeX, Math.sin(time * 5.0) * 0.18, sliceZ * 0.4);
+    packetMat.color.setHex(phaseVal < 0.34 ? 0x38bdf8 : (phaseVal <= 0.66 ? 0xffffff : 0xf59e0b));
+
+    // Animate Panel I: Analog Waves
+    const analogBoost = phaseVal < 0.4 ? 1.0 : 0.45;
+    analogWaves.forEach(w => {
+      const pos = w.geo.getAttribute('position');
+      const inSlice = Math.abs(w.zBase - sliceZ) < 0.45;
+      for (let s = 0; s <= waveSegs; s++) {
+        const u = s / waveSegs;
+        const x = -3.85 + u * 2.0;
+        const y = w.yBase + Math.sin(u * Math.PI * 3.0 - time * 3.8 + w.phase) * 0.24 * analogBoost;
+        const z = w.zBase + Math.cos(u * Math.PI * 2.0 - time * 2.6 + w.phase) * 0.15;
+        pos.setXYZ(s, x, y, z);
+      }
+      pos.needsUpdate = true;
+      w.mat.color.setHex(inSlice ? 0x22d3ee : 0x38bdf8);
+      w.mat.opacity = inSlice ? 0.95 : 0.42 + analogBoost * 0.4;
+    });
+
+    // Animate Panel II: The Blur (c-boundary)
+    const blurBoost = (phaseVal >= 0.30 && phaseVal <= 0.70) ? 1.15 : 0.55;
+    blurRing.rotation.z = time * 1.4;
+    blurRing.rotation.y = Math.sin(time * 0.9) * 0.45;
+    blurInner.rotation.z = -time * 2.1;
+    blurInner.rotation.x = Math.cos(time * 1.1) * 0.5;
+    blurRingMat.opacity = Math.min(1.0, 0.4 + blurBoost * 0.5);
+
+    blurSparks.forEach(sp => {
+      const a = sp.angle + time * sp.speed * blurBoost;
+      const r = sp.rad * (0.85 + 0.2 * Math.sin(time * 4.0 + sp.angle));
+      sp.mesh.position.set(Math.cos(a) * r, Math.sin(a) * r, sp.zOff);
+      const inSlice = Math.abs(sp.zOff - sliceZ) < 0.45;
+      sp.mesh.scale.setScalar(inSlice ? 1.25 : 0.85);
+    });
+
+    // Animate Panel III: Digital Voxels
+    const digBoost = phaseVal > 0.60 ? 1.0 : 0.45;
+    digitalVoxels.forEach(v => {
+      const zWorld = v.iz * 0.62;
+      const inSlice = Math.abs(zWorld - sliceZ) < 0.35;
+      const activeBit = v.bit === 1;
+      if (activeBit) {
+        v.mesh.material.color.setHex(quantaFlash > 0.2 ? 0xfef08a : 0xf59e0b);
+        v.mesh.material.emissive.setHex(0xb45309);
+        v.mesh.material.emissiveIntensity = inSlice ? 0.95 : 0.35 + digBoost * 0.45;
+        v.mesh.material.opacity = inSlice ? 0.98 : 0.45 + digBoost * 0.45;
+        v.mesh.scale.setScalar(inSlice ? 1.14 : 0.94);
+      } else {
+        v.mesh.material.color.setHex(0x1e293b);
+        v.mesh.material.emissive.setHex(0x000000);
+        v.mesh.material.emissiveIntensity = 0.0;
+        v.mesh.material.opacity = inSlice ? 0.35 : 0.16;
+        v.mesh.scale.setScalar(0.76);
+      }
+    });
+
+    world.rotation.y = rotY + Math.sin(time * 0.25) * 0.08;
+    renderer.render(scene, camera);
+  }
+
+  updateUI();
+  animate(0);
+</script>
+</body>
+</html>
