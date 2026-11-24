@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beyond Real Time — Kerr Horizon, Wormhole Throat &amp; Quantum Foam</title>
+  <style>
+    :root {
+      --bg: #060911;
+      --panel: #0d1320;
+      --panel-alt: #121a2b;
+      --border: #1d2a42;
+      --text: #e6ecf5;
+      --muted: #8b9bb4;
+      --cyan: #00e5ff;
+      --amber: #ffa400;
+      --violet: #b388ff;
+      --rose: #ff5277;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.55;
+      padding: 20px 16px 40px;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .kicker {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--amber);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    h1 {
+      font-size: clamp(1.45rem, 2.8vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .metric-pill {
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: var(--cyan);
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid rgba(0, 229, 255, 0.35);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    /* Interactive 3D Stage */
+    .stage-wrap {
+      position: relative;
+      background: #04070d;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    #webglStage {
+      width: 100%;
+      height: 490px;
+      display: block;
+      cursor: grab;
+    }
+
+    #webglStage:active {
+      cursor: grabbing;
+    }
+
+    .hud-overlay {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hud-pill {
+      background: rgba(13, 19, 32, 0.84);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #dbe5f4;
+    }
+
+    .hud-pill strong {
+      color: var(--amber);
+    }
+
+    .hud-hint {
+      position: absolute;
+      bottom: 12px;
+      right: 14px;
+      pointer-events: none;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: rgba(6, 9, 17, 0.78);
+      padding: 4px 9px;
+      border-radius: 4px;
+    }
+
+    /* Controls Bar */
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .control-group label span {
+      color: var(--text);
+      font-family: monospace;
+      font-size: 0.88rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--amber);
+      cursor: pointer;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+
+    button:hover {
+      border-color: var(--cyan);
+      color: #fff;
+    }
+
+    button.active {
+      background: rgba(255, 164, 0, 0.16);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    /* Telemetry Strip */
+    .telemetry {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 820px) {
+      .telemetry { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 13px 14px;
+    }
+
+    .metric-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .metric-val {
+      font-family: monospace;
+      font-size: 1.06rem;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Bottom Commentary */
+    .editorial-bottom {
+      background: linear-gradient(135deg, rgba(255, 164, 0, 0.06), rgba(0, 229, 255, 0.06));
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--amber);
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+
+    .editorial-bottom h2 {
+      font-size: 0.96rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--amber);
+      margin-bottom: 8px;
+    }
+
+    .editorial-bottom p {
+      font-size: 0.98rem;
+      color: #dbe5f4;
+    }
+
+    footer {
+      margin-top: 22px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <div class="kicker">Beyond Real Time • Boundary &amp; Topological Speculation</div>
+        <h1>Kerr Rotation, Spherical Wormhole Aperture &amp; Quantum Foam</h1>
+      </div>
+      <div class="metric-pill">Spin Parameter (a*) • ER=EPR Coupling • Planck Foam</div>
+    </header>
+
+    <!-- 1. 3D WebGL Stage -->
+    <section class="stage-wrap">
+      <div id="webglStage"></div>
+      <div class="hud-overlay">
+        <div class="hud-pill">METRIC: <strong id="hudMetric">Kerr Rotating Ergosphere</strong></div>
+        <div class="hud-pill">APERTURE: <strong id="hudAperture">3D Spherical Boundary (Non-Tube)</strong></div>
+        <div class="hud-pill">FOAM REGIME: <strong id="hudFoam">Wheeler Planck Fluctuations</strong></div>
+      </div>
+      <div class="hud-hint">Drag to orbit • Scroll to zoom • Push Spin (a*) toward extremal to open throat coupling</div>
+    </section>
+
+    <!-- 2. Interactive Controls -->
+    <section class="controls">
+      <div class="control-group">
+        <label>Dimensionless Spin (a* = J / M²) <span id="spinVal">0.72</span></label>
+        <input type="range" id="spinSlider" min="0" max="99" value="72" />
+      </div>
+
+      <div class="control-group">
+        <label>Wheeler Quantum Foam / ER=EPR <span id="foamVal">55%</span></label>
+        <input type="range" id="foamSlider" min="0" max="100" value="55" />
+      </div>
+
+      <div class="control-group">
+        <label>Topological View <span id="topoVal">Spherical Throat</span></label>
+        <div class="btn-group" id="topoBtns">
+          <button data-topo="throat" class="active">Spherical Throat</button>
+          <button data-topo="ergo">Ergosphere &amp; Ring</button>
+          <button data-topo="foam">Quantum Foam</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Live Boundary Telemetry -->
+    <section class="telemetry">
+      <div class="metric">
+        <div class="metric-label">Frame-Dragging Rate</div>
+        <div class="metric-val" id="mOmega">0.72 Ω_K</div>
+        <div class="metric-sub" id="mErgosphere">Oblate ergosphere boundary</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Throat Coupling (ER=EPR)</div>
+        <div class="metric-val" id="mCoupling">Moderate Bridge</div>
+        <div class="metric-sub">Closed spherical boundary, not a tube</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Foam Curvature Variance</div>
+        <div class="metric-val" id="mFoam">δg ~ 0.55 l_P</div>
+        <div class="metric-sub">Wheeler micro-topological fluctuations</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Speculative Status</div>
+        <div class="metric-val" id="mStatus">Open Hypothesis</div>
+        <div class="metric-sub">Tested against horizons &amp; scale</div>
+      </div>
+    </section>
+
+    <!-- 4. Bottom Commentary -->
+    <section class="editorial-bottom">
+      <h2>Why Wormholes Are Spherical Boundaries—Not Cartoon Tubes</h2>
+      <p>
+        Flat-sheet diagrams make wormholes look like drinking straws bent through paper, but a real 3D throat is a closed spherical boundary interface—the geometry that made <em>Interstellar</em>’s visual leap so memorable. Pair Roy Kerr’s rotating ring structure with Wheeler’s quantum foam and ER=EPR entanglement, and the bold question arises: could black holes act as topological gateways or bounces rather than dead-end points? It remains an open frontier, but boundary geometry and scale invariance tell us where the real math holds.
+      </p>
+    </section>
+
+    <footer>
+      Beyond Real Time • Boundary &amp; Scale Exploration • Self-Contained Three.js WebGL Simulation
+    </footer>
+  </div>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    (() => {
+      const container = document.getElementById("webglStage");
+      const state = {
+        spin: 0.72,       // 0.00 to 0.99
+        foam: 0.55,       // 0.00 to 1.00
+        topoView: "throat"
+      };
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x04070d, 0.017);
+
+      const camera = new THREE.PerspectiveCamera(
+        46,
+        container.clientWidth / container.clientHeight,
+        0.1,
+        200
+      );
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setClearColor(0x04070d, 1);
+      container.appendChild(renderer.domElement);
+
+      // Lights
+      scene.add(new THREE.AmbientLight(0x283854, 1.35));
+
+      const amberLight = new THREE.PointLight(0xffa400, 2.2, 60);
+      amberLight.position.set(12, 10, 14);
+      scene.add(amberLight);
+
+      const cyanLight = new THREE.PointLight(0x00e5ff, 2.0, 60);
+      cyanLight.position.set(-12, -8, 12);
+      scene.add(cyanLight);
+
+      const violetLight = new THREE.PointLight(0xb388ff, 1.6, 60);
+      violetLight.position.set(0, 12, -14);
+      scene.add(violetLight);
+
+      const rootGroup = new THREE.Group();
+      scene.add(rootGroup);
+
+      // 1. Spherical Wormhole Boundary Shell (Closed 3D aperture, not a 2D tube)
+      const throatGeo = new THREE.SphereGeometry(3.35, 56, 40);
+      const throatPosAttr = throatGeo.attributes.position;
+      const throatBasePos = new Float32Array(throatPosAttr.array.length);
+      throatBasePos.set(throatPosAttr.array);
+
+      const throatMat = new THREE.MeshBasicMaterial({
+        color: 0x00e5ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.28
+      });
+      const throatMesh = new THREE.Mesh(throatGeo, throatMat);
+      rootGroup.add(throatMesh);
+
+      // Equatorial Lensing / ER=EPR Throat Rim
+      const rimGeo = new THREE.TorusGeometry(3.42, 0.045, 16, 96);
+      const rimMat = new THREE.MeshBasicMaterial({
+        color: 0xffa400,
+        transparent: true,
+        opacity: 0.78
+      });
+      const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+      rimMesh.rotation.x = Math.PI * 0.42;
+      rootGroup.add(rimMesh);
+
+      // 2. Kerr Ring Singularity & Inner / Outer Frame-Dragging Shells
+      const kerrRingGeo = new THREE.TorusGeometry(2.15, 0.085, 20, 96);
+      const kerrRingMat = new THREE.MeshStandardMaterial({
+        color: 0xffa400,
+        emissive: 0xff6d00,
+        emissiveIntensity: 1.1,
+        roughness: 0.25,
+        metalness: 0.6
+      });
+      const kerrRing = new THREE.Mesh(kerrRingGeo, kerrRingMat);
+      kerrRing.rotation.x = Math.PI * 0.5;
+      rootGroup.add(kerrRing);
+
+      // Oblate Outer Ergosphere / Horizon Wireframe
+      const ergoGeo = new THREE.SphereGeometry(5.1, 44, 32);
+      const ergoMat = new THREE.MeshBasicMaterial({
+        color: 0xb388ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.14
+      });
+      const ergoMesh = new THREE.Mesh(ergoGeo, ergoMat);
+      rootGroup.add(ergoMesh);
+
+      // 3. Frame-Dragged Meridian Lines (showing twist around spin axis)
+      const meridians = [];
+      const meridianCount = 12;
+      for (let m = 0; m < meridianCount; m++) {
+        const pts = [];
+        const phi0 = (m / meridianCount) * Math.PI * 2;
+        for (let s = 0; s <= 36; s++) {
+          const v = (s / 36) * Math.PI; // polar angle 0..PI
+          const r = 5.1;
+          const x = r * Math.sin(v) * Math.cos(phi0);
+          const y = r * 0.78 * Math.cos(v);
+          const z = r * Math.sin(v) * Math.sin(phi0);
+          pts.push(new THREE.Vector3(x, y, z));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({
+          color: 0x00e5ff,
+          transparent: true,
+          opacity: 0.34
+        });
+        const line = new THREE.Line(geo, mat);
+        rootGroup.add(line);
+        meridians.push({ line, phi0 });
+      }
+
+      // 4. Wheeler Quantum Foam Nodes & ER=EPR Entangled Pairs
+      const foamCount = 150;
+      const foamNodes = [];
+      const nodeGeo = new THREE.OctahedronGeometry(0.11, 0);
+
+      for (let i = 0; i < foamCount; i++) {
+        const radius = 3.6 + Math.random() * 4.4;
+        const theta = Math.random() * Math.PI * 2;
+        const cosPhi = 2 * Math.random() - 1;
+        const sinPhi = Math.sqrt(Math.max(0, 1 - cosPhi * cosPhi));
+
+        const bx = radius * sinPhi * Math.cos(theta);
+        const by = radius * cosPhi * 0.85;
+        const bz = radius * sinPhi * Math.sin(theta);
+
+        const mat = new THREE.MeshBasicMaterial({
+          color: i % 3 === 0 ? 0xffa400 : i % 3 === 1 ? 0x00e5ff : 0xb388ff,
+          transparent: true,
+          opacity: 0.75
+        });
+        const mesh = new THREE.Mesh(nodeGeo, mat);
+        mesh.position.set(bx, by, bz);
+        rootGroup.add(mesh);
+
+        foamNodes.push({
+          mesh,
+          mat,
+          bx,
+          by,
+          bz,
+          seed: Math.random() * Math.PI * 2,
+          speed: 0.8 + Math.random() * 1.8
+        });
+      }
+
+      // Camera Orbit & Presets
+      const camState = {
+        theta: 0.58,
+        phi: 1.12,
+        dist: 17.5,
+        targetTheta: 0.58,
+        targetPhi: 1.12,
+        targetDist: 17.5,
+        isDragging: false,
+        prevX: 0,
+        prevY: 0
+      };
+
+      function applyTopoPreset(topo) {
+        state.topoView = topo;
+        if (topo === "throat") {
+          camState.targetTheta = 0.58;
+          camState.targetPhi = 1.12;
+          camState.targetDist = 17.5;
+        } else if (topo === "ergo") {
+          camState.targetTheta = 0.35;
+          camState.targetPhi = 0.78;
+          camState.targetDist = 15.5;
+        } else if (topo === "foam") {
+          camState.targetTheta = 0.95;
+          camState.targetPhi = 1.32;
+          camState.targetDist = 19.5;
+        }
+      }
+
+      container.addEventListener("pointerdown", (e) => {
+        camState.isDragging = true;
+        camState.prevX = e.clientX;
+        camState.prevY = e.clientY;
+      });
+
+      window.addEventListener("pointerup", () => {
+        camState.isDragging = false;
+      });
+
+      window.addEventListener("pointermove", (e) => {
+        if (!camState.isDragging) return;
+        const dx = e.clientX - camState.prevX;
+        const dy = e.clientY - camState.prevY;
+        camState.prevX = e.clientX;
+        camState.prevY = e.clientY;
+        camState.targetTheta -= dx * 0.007;
+        camState.targetPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camState.targetPhi - dy * 0.007));
+      });
+
+      container.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        camState.targetDist = Math.max(7.5, Math.min(34, camState.targetDist + e.deltaY * 0.014));
+      }, { passive: false });
+
+      // UI Controls
+      const spinSlider = document.getElementById("spinSlider");
+      const foamSlider = document.getElementById("foamSlider");
+      const spinVal = document.getElementById("spinVal");
+      const foamVal = document.getElementById("foamVal");
+      const topoVal = document.getElementById("topoVal");
+
+      spinSlider.addEventListener("input", (e) => {
+        const raw = Number(e.target.value);
+        state.spin = raw / 100;
+        spinVal.textContent = state.spin.toFixed(2);
+        updateTelemetry();
+      });
+
+      foamSlider.addEventListener("input", (e) => {
+        const raw = Number(e.target.value);
+        state.foam = raw / 100;
+        foamVal.textContent = `${raw}%`;
+        updateTelemetry();
+      });
+
+      document.querySelectorAll("#topoBtns button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("#topoBtns button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const labels = {
+            throat: "Spherical Throat",
+            ergo: "Ergosphere & Ring",
+            foam: "Quantum Foam"
+          };
+          topoVal.textContent = labels[btn.dataset.topo];
+          applyTopoPreset(btn.dataset.topo);
+          updateTelemetry();
+        });
+      });
+
+      function updateTelemetry() {
+        const a = state.spin;
+        const f = state.foam;
+
+        document.getElementById("mOmega").textContent = `${a.toFixed(2)} Ω_K`;
+        document.getElementById("mErgosphere").textContent =
+          a > 0.85 ? "Near-extremal frame drag" : a > 0.25 ? "Oblate ergosphere boundary" : "Low-spin static limit";
+
+        const couplingLabel =
+          a * 0.65 + f * 0.35 > 0.72 ? "Strong Throat Coupling" :
+          a * 0.65 + f * 0.35 > 0.35 ? "Moderate Bridge" : "Weak / Pinch-Off";
+        document.getElementById("mCoupling").textContent = couplingLabel;
+
+        document.getElementById("mFoam").textContent = `δg ~ ${f.toFixed(2)} l_P`;
+
+        const hudMetric = document.getElementById("hudMetric");
+        const hudFoam = document.getElementById("hudFoam");
+        const mStatus = document.getElementById("mStatus");
+
+        hudMetric.textContent = a > 0.05 ? "Kerr Rotating Ergosphere" : "Schwarzschild Non-Rotating Limit";
+        hudFoam.textContent =
+          f > 0.65 ? "High Planck Foam / ER=EPR Activity" :
+          f > 0.2 ? "Wheeler Planck Fluctuations" : "Smooth Classical Manifold";
+
+        mStatus.textContent = state.topoView === "foam" ? "Planck Frontier" : "Open Hypothesis";
+      }
+
+      window.addEventListener("resize", () => {
+        if (!container.clientWidth || !container.clientHeight) return;
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+        const a = state.spin;
+        const f = state.foam;
+
+        camState.theta += (camState.targetTheta - camState.theta) * 0.08;
+        camState.phi += (camState.targetPhi - camState.phi) * 0.08;
+        camState.dist += (camState.targetDist - camState.dist) * 0.08;
+
+        camera.position.x = camState.dist * Math.sin(camState.phi) * Math.sin(camState.theta);
+        camera.position.y = camState.dist * Math.cos(camState.phi);
+        camera.position.z = camState.dist * Math.sin(camState.phi) * Math.cos(camState.theta);
+        camera.lookAt(0, 0, 0);
+
+        // Rotate Kerr ring & throat rim proportional to spin a*
+        const rotRate = 0.25 + a * 3.2;
+        kerrRing.rotation.z = t * rotRate;
+        rimMesh.rotation.z = -t * (0.4 + a * 2.1);
+
+        // Oblateness of outer ergosphere increases with spin
+        const oblatenessY = 1.0 - a * 0.28;
