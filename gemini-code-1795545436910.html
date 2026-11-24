@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beyond Real Time — Gallery Two: 25nm Microtubule &amp; Boundary Coherence</title>
+  <style>
+    :root {
+      --bg: #060911;
+      --panel: #0d1320;
+      --panel-alt: #121a2b;
+      --border: #1d2a42;
+      --text: #e6ecf5;
+      --muted: #8b9bb4;
+      --cyan: #00e5ff;
+      --amber: #ffa400;
+      --violet: #b388ff;
+      --emerald: #69f0ae;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.55;
+      padding: 20px 16px 40px;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .kicker {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    h1 {
+      font-size: clamp(1.45rem, 2.8vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .scale-tag {
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: var(--amber);
+      background: rgba(255, 164, 0, 0.12);
+      border: 1px solid rgba(255, 164, 0, 0.35);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    /* Interactive Stage */
+    .stage-wrap {
+      position: relative;
+      background: #04070d;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    #webglStage {
+      width: 100%;
+      height: 480px;
+      display: block;
+      cursor: grab;
+    }
+
+    #webglStage:active {
+      cursor: grabbing;
+    }
+
+    .hud-overlay {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hud-pill {
+      background: rgba(13, 19, 32, 0.82);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #dbe5f4;
+    }
+
+    .hud-pill strong {
+      color: var(--cyan);
+    }
+
+    .hud-hint {
+      position: absolute;
+      bottom: 12px;
+      right: 14px;
+      pointer-events: none;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: rgba(6, 9, 17, 0.75);
+      padding: 4px 9px;
+      border-radius: 4px;
+    }
+
+    /* Controls Bar */
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .control-group label span {
+      color: var(--text);
+      font-family: monospace;
+      font-size: 0.88rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: var(--panel-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+
+    button:hover {
+      border-color: var(--cyan);
+      color: #fff;
+    }
+
+    button.active {
+      background: rgba(0, 229, 255, 0.15);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    button.trigger-btn {
+      border-color: rgba(255, 164, 0, 0.5);
+      color: var(--amber);
+    }
+
+    button.trigger-btn:hover {
+      background: rgba(255, 164, 0, 0.15);
+      border-color: var(--amber);
+    }
+
+    /* Telemetry Strip */
+    .telemetry {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 820px) {
+      .telemetry { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 13px 14px;
+    }
+
+    .metric-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .metric-val {
+      font-family: monospace;
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Bottom Commentary */
+    .editorial-bottom {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.06), rgba(179, 136, 255, 0.06));
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--cyan);
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+
+    .editorial-bottom h2 {
+      font-size: 0.96rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--cyan);
+      margin-bottom: 8px;
+    }
+
+    .editorial-bottom p {
+      font-size: 0.98rem;
+      color: #dbe5f4;
+    }
+
+    footer {
+      margin-top: 22px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <div class="kicker">Beyond Real Time • Gallery Two • Boundary &amp; Scale Invariance</div>
+        <h1>25nm Tubulin Lattice &amp; Casimir Cavity Coherence</h1>
+      </div>
+      <div class="scale-tag">13 Protofilaments • Ø 25 nm Bore • 8 nm Dimer Pitch</div>
+    </header>
+
+    <!-- 1. 3D WebGL Stage -->
+    <section class="stage-wrap">
+      <div id="webglStage"></div>
+      <div class="hud-overlay">
+        <div class="hud-pill">BOUNDARY: <strong>25 nm Cylindrical Cavity</strong></div>
+        <div class="hud-pill">REGIME: <strong id="hudRegime">Sheltered Casimir Coherence</strong></div>
+        <div class="hud-pill">ACTION FILTER: <strong id="hudAction">Stationary Phase Locked</strong></div>
+      </div>
+      <div class="hud-hint">Drag to orbit • Scroll to zoom • Toggle Interior Bore to look down the waveguide</div>
+    </section>
+
+    <!-- 2. Interactive Controls -->
+    <section class="controls">
+      <div class="control-group">
+        <label>Boundary Shielding / Coherence <span id="cohVal">78%</span></label>
+        <input type="range" id="cohSlider" min="5" max="100" value="78" />
+      </div>
+
+      <div class="control-group">
+        <label>Field Coupling Mode <span id="modeVal">Helical Wave</span></label>
+        <div class="btn-group" id="modeBtns">
+          <button data-mode="wave" class="active">Field Wave</button>
+          <button data-mode="collapse">Orch-OR Pulse</button>
+          <button id="manualCollapseBtn" class="trigger-btn">Trigger Collapse</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Camera Aperture <span id="camVal">Exterior Lattice</span></label>
+        <div class="btn-group" id="camBtns">
+          <button data-cam="exterior" class="active">Exterior Helix</button>
+          <button data-cam="bore">Interior 25nm Bore</button>
+          <button data-cam="cross">Cross-Section</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Live Boundary Telemetry -->
+    <section class="telemetry">
+      <div class="metric">
+        <div class="metric-label">Cavity Cutoff Gap</div>
+        <div class="metric-val" id="mGap">25.0 nm</div>
+        <div class="metric-sub">13-protofilament hollow core</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Coherence Window (τ)</div>
+        <div class="metric-val" id="mTau">420 μs</div>
+        <div class="metric-sub" id="mTauSub">Above thermal kT noise floor</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Path-Integral Filtering</div>
+        <div class="metric-val" id="mAction">94% Stationary</div>
+        <div class="metric-sub">Destructive phase cancellation</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Dipole State Bias (A ↔ D)</div>
+        <div class="metric-val" id="mState">Coherent Superposition</div>
+        <div class="metric-sub" id="mFreq">~14.2 MHz lattice resonance</div>
+      </div>
+    </section>
+
+    <!-- 4. Bottom Commentary -->
+    <section class="editorial-bottom">
+      <h2>Scale Invariance: From Horizons to 25 Nanometers</h2>
+      <p>
+        Nature is economical: Feynman’s path integral lets every wild trajectory interfere until only the least-action path survives inside a boundary. Whether looking at a rotating Kerr aperture or a 25-nanometer tubulin cylinder, the boundary geometry decides which modes survive. Dial down the shielding to watch thermal agitation scatter the lattice; raise it to see coherent dipole waves lock down the hollow bore and trigger discrete Orch-OR state transitions.
+      </p>
+    </section>
+
+    <footer>
+      Beyond Real Time • Gallery Two • Self-Contained Three.js WebGL Simulation
+    </footer>
+  </div>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    (() => {
+      const container = document.getElementById("webglStage");
+      const state = {
+        coherence: 0.78,
+        mode: "wave",     // "wave" | "collapse"
+        camView: "exterior",
+        collapseFlash: 0,
+        autoCollapseTimer: 0
+      };
+
+      // Scene, Camera, Renderer
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x04070d, 0.018);
+
+      const camera = new THREE.PerspectiveCamera(
+        46,
+        container.clientWidth / container.clientHeight,
+        0.1,
+        200
+      );
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setClearColor(0x04070d, 1);
+      container.appendChild(renderer.domElement);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0x283854, 1.3);
+      scene.add(ambientLight);
+
+      const keyLight = new THREE.PointLight(0x00e5ff, 2.2, 60);
+      keyLight.position.set(14, 12, 16);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.PointLight(0xb388ff, 1.8, 60);
+      rimLight.position.set(-14, -10, -14);
+      scene.add(rimLight);
+
+      const coreLight = new THREE.PointLight(0xffa400, 1.4, 30);
+      coreLight.position.set(0, 0, 0);
+      scene.add(coreLight);
+
+      // Microtubule Geometry Parameters (13 protofilaments, 3-start B-lattice pitch)
+      const protofilaments = 13;
+      const rings = 22;
+      const radius = 4.2;       // Scaled representation of 25nm outer diameter
+      const axialStep = 1.05;   // Scaled 8nm dimer step
+      const totalLength = (rings - 1) * axialStep;
+
+      const latticeGroup = new THREE.Group();
+      scene.add(latticeGroup);
+
+      // Create α/β Tubulin Dimers as instanced or individual meshes for crisp per-dimer phase coloring
+      const dimers = [];
+      const alphaGeo = new THREE.SphereGeometry(0.42, 16, 14);
+      const betaGeo = new THREE.SphereGeometry(0.42, 16, 14);
+
+      for (let r = 0; r < rings; r++) {
+        const zBase = r * axialStep - totalLength * 0.5;
+        for (let p = 0; p < protofilaments; p++) {
+          const theta = (p / protofilaments) * Math.PI * 2;
+          // 3-start helix offset (~1.5 dimer shift per full turn)
+          const helicalShift = (p / protofilaments) * (axialStep * 1.5);
+          const z = zBase + helicalShift;
+
+          const x = Math.cos(theta) * radius;
+          const y = Math.sin(theta) * radius;
+
+          const dimerGroup = new THREE.Group();
+          dimerGroup.position.set(x, y, z);
+          dimerGroup.lookAt(0, 0, z);
+
+          const alphaMat = new THREE.MeshStandardMaterial({
+            color: 0x0e2a38,
+            emissive: 0x00607a,
+            emissiveIntensity: 0.45,
+            roughness: 0.35,
+            metalness: 0.25
+          });
+
+          const betaMat = new THREE.MeshStandardMaterial({
+            color: 0x1d1836,
+            emissive: 0x4527a0,
+            emissiveIntensity: 0.45,
+            roughness: 0.35,
+            metalness: 0.25
+          });
+
+          const alphaMesh = new THREE.Mesh(alphaGeo, alphaMat);
+          alphaMesh.position.z = -0.22;
+          const betaMesh = new THREE.Mesh(betaGeo, betaMat);
+          betaMesh.position.z = 0.22;
+
+          dimerGroup.add(alphaMesh);
+          dimerGroup.add(betaMesh);
+          latticeGroup.add(dimerGroup);
+
+          dimers.push({
+            group: dimerGroup,
+            alphaMat,
+            betaMat,
+            p,
+            r,
+            theta,
+            baseX: x,
+            baseY: y,
+            baseZ: z,
+            phaseSeed: Math.random() * Math.PI * 2
+          });
+        }
+      }
+
+      // Interior 25nm Casimir Waveguide Rings & Core Field Filaments
+      const cavityGroup = new THREE.Group();
+      latticeGroup.add(cavityGroup);
+
+      const coreRings = [];
+      const ringGeo = new THREE.TorusGeometry(radius * 0.62, 0.03, 10, 48);
+      for (let i = 0; i < 14; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+          color: 0x00e5ff,
+          transparent: true,
+          opacity: 0.22
+        });
+        const mesh = new THREE.Mesh(ringGeo, mat);
+        mesh.position.z = ((i / 13) - 0.5) * totalLength;
+        cavityGroup.add(mesh);
+        coreRings.push(mesh);
+      }
+
+      // Axial Standing-Wave Photonic/Dipole Filaments inside the Bore
+      const filamentCount = 18;
+      const filaments = [];
+      for (let f = 0; f < filamentCount; f++) {
+        const pts = [];
+        const fAngle = (f / filamentCount) * Math.PI * 2;
+        const fRad = 0.6 + (f % 3) * 0.65;
+        for (let s = 0; s <= 40; s++) {
+          const z = ((s / 40) - 0.5) * (totalLength + 3);
+          pts.push(new THREE.Vector3(Math.cos(fAngle) * fRad, Math.sin(fAngle) * fRad, z));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({
+          color: f % 2 === 0 ? 0x00e5ff : 0xb388ff,
+          transparent: true,
+          opacity: 0.45
+        });
+        const line = new THREE.Line(geo, mat);
+        cavityGroup.add(line);
+        filaments.push({ line, fAngle, fRad, index: f });
+      }
+
+      // Camera Orbit & Preset System
+      const camState = {
+        theta: 0.55,
+        phi: 1.18,
+        dist: 23,
+        targetTheta: 0.55,
+        targetPhi: 1.18,
+        targetDist: 23,
+        isDragging: false,
+        prevX: 0,
+        prevY: 0
+      };
+
+      function setCameraPreset(preset) {
+        state.camView = preset;
+        if (preset === "exterior") {
+          camState.targetTheta = 0.55;
+          camState.targetPhi = 1.18;
+          camState.targetDist = 23;
+        } else if (preset === "bore") {
+          camState.targetTheta = 0.02;
+          camState.targetPhi = 1.56;
+          camState.targetDist = 14.5;
+        } else if (preset === "cross") {
+          camState.targetTheta = 0.0;
+          camState.targetPhi = 1.57;
+          camState.targetDist = 19.5;
+        }
+      }
+
+      container.addEventListener("pointerdown", (e) => {
+        camState.isDragging = true;
+        camState.prevX = e.clientX;
+        camState.prevY = e.clientY;
+      });
+
+      window.addEventListener("pointerup", () => {
+        camState.isDragging = false;
+      });
+
+      window.addEventListener("pointermove", (e) => {
+        if (!camState.isDragging) return;
+        const dx = e.clientX - camState.prevX;
+        const dy = e.clientY - camState.prevY;
+        camState.prevX = e.clientX;
+        camState.prevY = e.clientY;
+        camState.targetTheta -= dx * 0.007;
+        camState.targetPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camState.targetPhi - dy * 0.007));
+      });
+
+      container.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        camState.targetDist = Math.max(8, Math.min(38, camState.targetDist + e.deltaY * 0.015));
+      }, { passive: false });
+
+      // UI Controls Wiring
+      const cohSlider = document.getElementById("cohSlider");
+      const cohVal = document.getElementById("cohVal");
+      const modeVal = document.getElementById("modeVal");
+      const camVal = document.getElementById("camVal");
+
+      cohSlider.addEventListener("input", (e) => {
+        const val = Number(e.target.value);
+        state.coherence = val / 100;
+        cohVal.textContent = `${val}%`;
+        updateTelemetry();
+      });
+
+      document.querySelectorAll("#modeBtns button[data-mode]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("#modeBtns button[data-mode]").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.mode = btn.dataset.mode;
+          modeVal.textContent = state.mode === "wave" ? "Helical Wave" : "Orch-OR Pulse";
+          if (state.mode === "collapse") state.collapseFlash = 1.0;
+          updateTelemetry();
+        });
+      });
+
+      document.getElementById("manualCollapseBtn").addEventListener("click", () => {
+        state.collapseFlash = 1.0;
+      });
+
+      document.querySelectorAll("#camBtns button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("#camBtns button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const labels = {
+            exterior: "Exterior Lattice",
+            bore: "Interior 25nm Bore",
+            cross: "Cross-Section"
+          };
+          camVal.textContent = labels[btn.dataset.cam];
+          setCameraPreset(btn.dataset.cam);
+        });
+      });
+
+      function updateTelemetry() {
+        const c = state.coherence;
+        const tauUs = Math.round(12 + Math.pow(c, 2.2) * 580);
+        const stationaryPct = Math.round(28 + c * 70);
+        const freqMhz = (8.4 + c * 7.8).toFixed(1);
+
+        document.getElementById("mTau").textContent = tauUs >= 1000 ? `${(tauUs / 1000).toFixed(2)} ms` : `${tauUs} μs`;
+        document.getElementById("mTauSub").textContent =
+          c > 0.55 ? "Above thermal kT noise floor" : "Thermal decoherence dominant";
+        document.getElementById("mAction").textContent = `${stationaryPct}% Stationary`;
+        document.getElementById("mFreq").textContent = `~${freqMhz} MHz lattice resonance`;
+
+        const hudRegime = document.getElementById("hudRegime");
+        const hudAction = document.getElementById("hudAction");
+        const mState = document.getElementById("mState");
+
+        if (c < 0.35) {
+          hudRegime.textContent = "Thermal kT Scattering";
+          hudAction.textContent = "Phase Decohered";
+          mState.textContent = "Classical Thermal Noise";
+        } else if (state.mode === "collapse") {
+          hudRegime.textContent = "Orch-OR Threshold Firing";
+          hudAction.textContent = "Discrete State Selection";
+          mState.textContent = "A ↔ D Discrete Collapse";
+        } else {
+          hudRegime.textContent = "Sheltered Casimir Coherence";
+          hudAction.textContent = "Stationary Phase Locked";
+          mState.textContent = "Coherent Superposition";
+        }
+      }
+
+      // Resize Handler
+      window.addEventListener("resize", () => {
+        if (!container.clientWidth || !container.clientHeight) return;
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+
+      // Animation Loop
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = clock.getDelta();
+        const t = clock.getElapsedTime();
+        const c = state.coherence;
+        const noise = 1 - c;
+
+        // Smooth camera interpolation
+        camState.theta += (camState.targetTheta - camState.theta) * 0.08;
+        camState.phi += (camState.targetPhi - camState.phi) * 0.08;
+        camState.dist += (camState.targetDist - camState.dist) * 0.08;
+
+        camera.position.x = camState.dist * Math.sin(camState.phi) * Math.sin(camState.theta);
+        camera.position.y = camState.dist * Math.cos(camState.phi);
+        camera.position.z = camState.dist * Math.sin(camState.phi) * Math.cos(camState.theta);
+        camera.lookAt(0, 0, 0);
+
+        // Gentle slow rotation in exterior view
+        if (state.camView === "exterior" && !camState.isDragging) {
+          latticeGroup.rotation.z = Math.sin(t * 0.25) * 0.18;
+        }
+
+        // Auto Orch-OR periodic collapse when in collapse mode
+        if (state.mode === "collapse") {
+          state.autoCollapseTimer += dt;
+          if (state.autoCollapseTimer > 2.4 - c * 1.1) {
+            state.collapseFlash = 1.0;
+            state.autoCollapseTimer = 0;
+          }
+        }
+        state.collapseFlash = Math.max(0, state.collapseFlash - dt * 1.6);
+
+        // Update Tubulin Dimers
+        dimers.forEach((d) => {
+          // Coherent helical wave vs random thermal jitter
+          const helicalPhase = d.r * 0.45 + d.p * 0.48 - t * (2.2 + c * 2.5);
+          const coherentWave = Math.sin(helicalPhase);
+          const thermalJitter = Math.sin(t * 19 + d.phaseSeed) * noise * 0.28
