@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silicon vs. Glass: Compute Paradigm Shift | Beyond Real Time</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: '#070a0f',
+                        panel: '#0e1522',
+                        panelBorder: '#1c273c',
+                        copperHot: '#ff4500',
+                        glassCyan: '#00f0ff',
+                        glassLaser: '#e0f7ff'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #05080d;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .glass-card {
+            background: rgba(14, 21, 34, 0.85);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            background: #1c273c;
+            border-radius: 9999px;
+            height: 6px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+            transition: transform 0.1s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        .toast-popup {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+    <!-- Toast Notification for Clipboard / Actions -->
+    <div id="toast" class="toast-popup fixed bottom-6 right-6 z-50 pointer-events-none opacity-0 translate-y-4 bg-cyan-500 text-slate-950 px-4 py-2.5 rounded-xl font-semibold shadow-2xl flex items-center gap-2 border border-cyan-300">
+        <i class="fa-solid fa-check-circle text-base"></i>
+        <span id="toastMessage">Copied to clipboard!</span>
+    </div>
+
+    <!-- Header & BRT Navigation -->
+    <header class="w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40 px-4 py-3.5">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-cyan-500 to-blue-600 p-0.5 shadow-lg shadow-cyan-950">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <i class="fa-solid fa-bolt-lightning text-cyan-400 text-lg"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-mono tracking-widest text-cyan-400 uppercase font-semibold">Beyond Real Time (BRT)</span>
+                        <span class="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded-full border border-slate-800">Hardware & Compute Physics</span>
+                    </div>
+                    <h1 class="text-base font-bold text-slate-100 tracking-tight">Silicon vs. Glass: The Energy Bottleneck</h1>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 text-xs font-mono">
+                <span class="text-slate-400 hidden lg:inline"><i class="fa-regular fa-clock text-slate-500 mr-1"></i>Archive Entry #2026.11</span>
+                <button onclick="scrollToSim()" class="px-3.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-play text-xs"></i> Jump to Interactive Sim
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-6 flex-1 flex flex-col gap-8">
+
+        <!-- Editorial Article & Blurb Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- Article Column -->
+            <div class="lg:col-span-7 flex flex-col gap-4">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono w-fit">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Physical Limits of Silicon
+                </div>
+                
+                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-100 leading-tight">
+                    Why Physics Will Eventually Overtake Today's AI Silicon Monopoly
+                </h2>
+
+                <p class="text-sm md:text-base text-slate-300 leading-relaxed">
+                    Treating today's semiconductor giants as permanent centers of gravity misses the ultimate arbiter: physics. Shoving billions of electrons through copper and silicon at gigawatt scale inflicts a severe tax in electrical resistance, thermal throttling, and massive cooling overhead.
+                </p>
+
+                <p class="text-sm md:text-base text-slate-400 leading-relaxed">
+                    Much like Thomas Edison's direct current (DC) lost its dominance to Tesla's alternating current (AC) when distance and line losses exposed DC's physical ceiling, current electrical interconnects face an inescapable wall. Moving signals through glass and photons changes the fundamental thermal and transport energy math by orders of magnitude.
+                </p>
+
+                <!-- Historical Analogy Box -->
+                <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start gap-3">
+                    <div class="p-2 bg-amber-500/10 rounded-lg text-amber-400 shrink-0">
+                        <i class="fa-solid fa-landmark text-lg"></i>
+                    </div>
+                    <div class="text-xs text-slate-300 leading-relaxed">
+                        <strong class="text-amber-300 block mb-0.5 font-mono">The De Gaulle & Physics Rule</strong>
+                        "The graveyard is filled with indispensable men—and indispensable technologies." No corporate incumbent holds a permanent lease on physics. When copper interconnect heat taxes eat your returns, light in glass takes over.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blurb Box Column -->
+            <div class="lg:col-span-5">
+                <div class="glass-card rounded-2xl p-5 border border-cyan-500/30 relative flex flex-col justify-between shadow-2xl h-full">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-mono uppercase font-semibold text-cyan-400 tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-quote-left"></i> BRT Editorial Blurb
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Ready to Share</span>
+                        </div>
+
+                        <blockquote id="editorialBlurbText" class="text-sm font-sans text-slate-200 leading-relaxed italic border-l-2 border-cyan-400 pl-3.5 my-2">
+                            "Everyone treats today’s AI silicon bottleneck as permanent because the capital and hype are massive. Yet pushing electrons through copper and silicon at gigawatt scale runs straight into resistance, heat, and cooling limits that scale painfully. Moving signal transport and compute toward glass and photons—much like AC overtaking Edison’s DC—changes the energy and thermal math by orders of magnitude where electrical interconnects choke. No incumbent is indispensable when the physics shifts."
+                        </blockquote>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
+                        <span class="text-[11px] text-slate-400 font-mono">Author: Baley / BRT Series</span>
+                        <button onclick="copyBlurb()" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold font-mono transition-all flex items-center gap-2 shadow-lg shadow-cyan-950/50">
+                            <i class="fa-regular fa-copy"></i> Copy Blurb Text
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Reference Visual Drawer / Freepik Slot -->
+        <section class="glass-card rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+            <!-- Drawer Toggle Header -->
+            <button onclick="toggleReferenceDrawer()" class="w-full px-5 py-4 flex items-center justify-between bg-slate-900/60 hover:bg-slate-900 transition-all text-left">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-cyan-400">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-200 font-mono">Reference Graphic & Freepik Asset Slot</h3>
+                        <p class="text-xs text-slate-400">Toggle conceptual vector diagram or preview your custom Freepik asset URL</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-slate-400 font-mono text-xs">
+                    <span id="drawerStatusText">Expand Panel</span>
+                    <i id="drawerChevron" class="fa-solid fa-chevron-down transition-transform"></i>
+                </div>
+            </button>
+
+            <!-- Collapsible Drawer Body -->
+            <div id="referenceDrawerBody" class="hidden border-t border-slate-800 p-5 bg-slate-950/50">
+                
+                <!-- Tab Controls -->
+                <div class="flex items-center gap-2 mb-4 font-mono text-xs">
+                    <button id="tabDiagramBtn" onclick="switchRefTab('diagram')" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30">
+                        <i class="fa-solid fa-diagram-project mr-1"></i> Concept Vector Diagram
+                    </button>
+                    <button id="tabFreepikBtn" onclick="switchRefTab('freepik')" class="px-3.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800">
+                        <i class="fa-solid fa-link mr-1"></i> Custom Freepik URL Frame
+                    </button>
+                </div>
+
+                <!-- Tab 1: Vector Diagram Preview -->
+                <div id="tabDiagramContent" class="block w-full">
+                    <div class="w-full bg-slate-900/90 rounded-xl p-4 border border-slate-800">
+                        <div class="text-xs font-mono text-slate-400 mb-2 flex justify-between items-center">
+                            <span>INFOGRAPHIC ARCHITECTURE COMPARISON</span>
+                            <span class="text-amber-400 font-bold">SILICON RESISTANCE VS. PHOTONIC LOSSLESS</span>
+                        </div>
+                        
+                        <!-- Responsive Inline Vector SVG -->
+                        <div class="w-full h-auto max-h-[320px] flex justify-center items-center">
+                            <svg class="w-full h-auto max-h-[300px]" viewBox="0 0 900 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Background split -->
+                                <rect x="10" y="10" width="430" height="280" rx="12" fill="#120a0a" stroke="#ff4500" stroke-width="1.5" stroke-dasharray="4 4"/>
+                                <rect x="460" y="10" width="430" height="280" rx="12" fill="#06121a" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="4 4"/>
+                                
+                                <!-- Left Title -->
+                                <text x="30" y="45" fill="#ff7700" font-family="JetBrains Mono" font-size="14" font-weight="bold">SILICON & COPPER: THE ELECTRON BOTTLENECK</text>
+                                <text x="30" y="65" fill="#94a3b8" font-family="Inter" font-size="11">Electron Drift • High Heat Resistance (I²R) • Thermal Throttling</text>
+                                
+                                <!-- Left Diagram Elements -->
+                                <rect x="40" y="90" width="100" height="150" rx="8" fill="#261010" stroke="#ff4500"/>
+                                <text x="90" y="170" fill="#ff7700" font-family="JetBrains Mono" font-size="12" text-anchor="middle">Silicon Core</text>
+                                
+                                <!-- Heat Waves -->
+                                <path d="M 160 110 Q 180 100 200 110 T 240 110" stroke="#ff3300" stroke-width="2" fill="none"/>
+                                <path d="M 160 160 Q 180 150 200 160 T 240 160" stroke="#ff5500" stroke-width="2" fill="none"/>
+                                <path d="M 160 210 Q 180 200 200 210 T 240 210" stroke="#ff7700" stroke-width="2" fill="none"/>
+                                
+                                <circle cx="180" cy="110" r="5" fill="#ffffff" filter="drop-shadow(0 0 5px #ff0000)"/>
+                                <circle cx="210" cy="160" r="5" fill="#ffffff" filter="drop-shadow(0 0 5px #ff0000)"/>
+                                
+                                <rect x="260" y="90" width="160" height="150" rx="8" fill="#1f1111" stroke="#ef4444"/>
+                                <text x="340" y="140" fill="#ef4444" font-family="JetBrains Mono" font-size="11" text-anchor="middle">Thermal Loss: High</text>
+                                <text x="340" y="165" fill="#fca5a5" font-family="JetBrains Mono" font-size="10" text-anchor="middle">Cooling Overhead: +40%</text>
+                                <text x="340" y="190" fill="#fca5a5" font-family="JetBrains Mono" font-size="10" text-anchor="middle">RC Latency Spike</text>
+
+                                <!-- Right Title -->
+                                <text x="480" y="45" fill="#00f0ff" font-family="JetBrains Mono" font-size="14" font-weight="bold">GLASS & PHOTONS: THE WAVEGUIDE SHIFT</text>
+                                <text x="480" y="65" fill="#94a3b8" font-family="Inter" font-size="11">Light Speed in Silica • WDM Parallel Channels • Zero Heat Loss</text>
+
+                                <!-- Right Diagram Elements -->
+                                <rect x="490" y="90" width="100" height="150" rx="8" fill="#0a2333" stroke="#00f0ff"/>
+                                <text x="540" y="170" fill="#00f0ff" font-family="JetBrains Mono" font-size="12" text-anchor="middle">Laser Emitter</text>
+                                
+                                <!-- Photonic Beam Waveguide -->
+                                <line x1="600" y1="120" x2="720" y2="120" stroke="#00f0ff" stroke-width="4"/>
+                                <line x1="600" y1="165" x2="720" y2="165" stroke="#ff00ea" stroke-width="4"/>
+                                <line x1="600" y1="210" x2="720" y2="210" stroke="#ffe600" stroke-width="4"/>
+
+                                <rect x="730" y="90" width="140" height="150" rx="8" fill="#071b26" stroke="#38bdf8"/>
+                                <text x="800" y="140" fill="#38bdf8" font-family="JetBrains Mono" font-size="11" text-anchor="middle">Thermal Loss: Zero</text>
+                                <text x="800" y="165" fill="#7dd3fc" font-family="JetBrains Mono" font-size="10" text-anchor="middle">Bandwidth: 32x Density</text>
+                                <text x="800" y="190" fill="#7dd3fc" font-family="JetBrains Mono" font-size="10" text-anchor="middle">Speed: Light c/n</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Custom Freepik Image Frame -->
+                <div id="tabFreepikContent" class="hidden flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row items-center gap-3">
+                        <input type="text" id="freepikUrlInput" placeholder="Paste your Freepik vector image URL or direct image link here..." 
+                               class="flex-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-400">
+                        <button onclick="loadFreepikGraphic()" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono font-bold text-cyan-300 border border-slate-700 transition-all shrink-0">
+                            Load Preview
+                        </button>
+                    </div>
+
+                    <div class="w-full h-[280px] bg-slate-900/60 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden relative group">
+                        <img id="freepikImageFrame" src="https://placehold.co/800x350/090d14/00f0ff?text=Freepik+Asset+Slot+-+Paste+Your+Graphic+URL+Above" 
+                             alt="Freepik Asset Preview" class="max-w-full max-h-full object-contain rounded-lg"
+                             onerror="this.src='https://placehold.co/800x350/090d14/ff4500?text=Image+Load+Failed+-+Verify+URL'">
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Main Interactive Simulation Canvas Section -->
+        <section id="simulationSection" class="flex flex-col gap-4 scroll-mt-20">
+            
+            <!-- Controls Bar -->
+            <div class="glass-card rounded-2xl p-4 flex flex-col lg:flex-row items-center justify-between gap-6 shadow-2xl">
+                
+                <!-- Control 1: Compute Load Slider -->
+                <div class="flex-1 w-full">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label for="loadSlider" class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2 font-mono">
+                            <i class="fa-solid fa-microchip text-amber-400"></i> Compute Load / Clock Demand
+                        </label>
+                        <span id="loadValue" class="text-xs font-mono font-bold text-amber-400 bg-amber-950/40 border border-amber-500/30 px-2.5 py-0.5 rounded">65% (AI Surge)</span>
+                    </div>
+                    <input type="range" id="loadSlider" min="10" max="100" value="65" class="w-full cursor-pointer">
+                    <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                        <span>Idle (10%)</span>
+                        <span>Nominal (40%)</span>
+                        <span>Heavy GPU (75%)</span>
+                        <span>AI Cluster Peak (100%)</span>
+                    </div>
+                </div>
+
+                <!-- Control 2: Scale Mode Toggle -->
+                <div class="flex flex-col gap-1.5 w-full lg:w-auto">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2 font-mono">
+                        <i class="fa-solid fa-ruler-horizontal text-cyan-400"></i> Interconnect Span
+                    </span>
+                    <div class="inline-flex rounded-xl bg-slate-900 p-1 border border-slate-800 text-xs font-mono">
+                        <button id="btnScaleChip" onclick="setScale('chip')" class="scale-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all">On-Chip (1 mm)</button>
+                        <button id="btnScaleRack" onclick="setScale('rack')" class="scale-btn active px-3 py-1.5 rounded-lg text-cyan-300 bg-slate-800 font-bold border border-cyan-500/30 shadow transition-all">Board/Rack (1 m)</button>
+                        <button id="btnScaleDC" onclick="setScale('dc')" class="scale-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all">Data Center (100 m)</button>
+                    </div>
+                </div>
+
+                <!-- Control 3: View Mode & Simulation State -->
+                <div class="flex items-center gap-2 w-full lg:w-auto justify-end border-t lg:border-t-0 border-slate-800 pt-3 lg:pt-0">
+                    <button id="toggleViewBtn" onclick="toggleViewMode()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700 flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-fire text-amber-400"></i>
+                        <span id="viewModeText">Thermal View</span>
+                    </button>
+                    <button id="pauseBtn" onclick="togglePause()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700 flex items-center gap-2 transition-all">
+                        <i id="pauseIcon" class="fa-solid fa-pause text-amber-400"></i>
+                        <span id="pauseText">Pause</span>
+                    </button>
+                    <button onclick="resetSimulation()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-400 hover:text-white border border-slate-700 transition-all" title="Reset Simulation">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dual Canvas Container -->
+            <div class="relative w-full rounded-2xl overflow-hidden border border-slate-800 bg-obsidian flex flex-col md:flex-row h-[480px] shadow-2xl">
+                
+                <!-- Left Side: Silicon Canvas -->
+                <div class="relative w-full md:w-1/2 h-full border-b md:border-b-0 md:border-r border-slate-800 overflow-hidden">
+                    <div class="absolute top-4 left-4 z-20 glass-card px-3.5 py-2 rounded-xl border border-amber-500/30 flex items-center gap-3">
+                        <div class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></div>
+                        <div>
+                            <h2 class="text-xs font-mono font-bold text-amber-400 tracking-wider uppercase">SILICON & COPPER</h2>
+                            <p class="text-[11px] text-slate-400">Electron Drift • Thermal $I^2R$ Loss</p>
+                        </div>
+                    </div>
+
+                    <canvas id="canvasSilicon" class="w-full h-full"></canvas>
+
+                    <div class="absolute bottom-4 left-4 z-20 glass-card px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono flex items-center gap-2">
+                        <span class="text-slate-400">Throttle State:</span>
+                        <span id="leftThrottleStatus" class="text-amber-400 font-bold">MODERATE</span>
+                    </div>
+                </div>
+
+                <!-- Right Side: Glass Canvas -->
+                <div class="relative w-full md:w-1/2 h-full overflow-hidden">
+                    <div class="absolute top-4 left-4 z-20 glass-card px-3.5 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-3">
+                        <div class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]"></div>
+                        <div>
+                            <h2 class="text-xs font-mono font-bold text-cyan-300 tracking-wider uppercase">GLASS & PHOTONS</h2>
+                            <p class="text-[11px] text-slate-400">Light Speed silica • WDM Optical Core</p>
+                        </div>
+                    </div>
+
+                    <canvas id="canvasGlass" class="w-full h-full"></canvas>
+
+                    <div class="absolute bottom-4 right-4 z-20 glass-card px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono flex items-center gap-2">
+                        <span class="text-slate-400">Optical Loss:</span>
+                        <span class="text-cyan-400 font-bold">&lt; 0.15 dB/m (Lossless)</span>
+                    </div>
+                </div>
+
+                <!-- Center Divider Badge -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 hidden md:flex flex-col items-center gap-1 pointer-events-none">
+                    <div class="w-9 h-9 rounded-full bg-slate-950 border border-slate-700 text-slate-300 flex items-center justify-center font-mono text-xs shadow-2xl font-bold">
+                        VS
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telemetry Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- Metric 1: Transport Energy -->
+                <div class="glass-card rounded-xl p-4 border-l-4 border-l-amber-500 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-mono text-slate-400 uppercase">Transport Energy</span>
+                        <i class="fa-solid fa-bolt text-slate-500 text-xs"></i>
+                    </div>
+                    <div class="my-2">
+                        <div class="flex items-baseline gap-2">
+                            <span id="metricEnergyCu" class="text-xl font-mono font-bold text-amber-400">6.40</span>
+                            <span class="text-xs font-mono text-slate-400">pJ/bit (Copper)</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <span id="metricEnergyOpt" class="text-xl font-mono font-bold text-cyan-400">0.18</span>
+                            <span class="text-xs font-mono text-slate-400">pJ/bit (Glass)</span>
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-slate-400 flex items-center justify-between border-t border-slate-800/60 pt-2 mt-1 font-mono">
+                        <span>Energy Ratio:</span>
+                        <span id="energyRatio" class="font-bold text-emerald-400">35.5x Lower Energy</span>
+                    </div>
+                </div>
+
+                <!-- Metric 2: Thermal Dissipation -->
+                <div class="glass-card rounded-xl p-4 border-l-4 border-l-red-500 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-mono text-slate-400 uppercase">Heat Dissipation ($I^2R$)</span>
+                        <i class="fa-solid fa-temperature-high text-slate-500 text-xs"></i>
+                    </div>
+                    <div class="my-2">
+                        <div class="flex justify-between items-baseline font-mono text-xs">
+                            <span class="text-slate-400">Copper Temp:</span>
+                            <span id="metricTempCu" class="font-bold text-red-400">88.5 °C</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-1.5 my-1 overflow-hidden">
+                            <div id="barTempCu" class="bg-gradient-to-r from-amber-500 to-red-600 h-full w-[85%] transition-all"></div>
+                        </div>
+                        <div class="flex justify-between items-baseline font-mono text-xs mt-2">
+                            <span class="text-slate-400">Glass Waveguide:</span>
+                            <span id="metricTempOpt" class="font-bold text-cyan-400">26.2 °C</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-1.5 my-1 overflow-hidden">
+                            <div id="barTempOpt" class="bg-cyan-400 h-full w-[15%] transition-all"></div>
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-slate-400 border-t border-slate-800/60 pt-2 mt-1 flex justify-between font-mono">
+                        <span>Cooling Overhead:</span>
+                        <span id="coolingTax" class="font-bold text-red-400">+42% Chillers</span>
+                    </div>
+                </div>
+
+                <!-- Metric 3: Throughput Density -->
+                <div class="glass-card rounded-xl p-4 border-l-4 border-l-cyan-400 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-mono text-slate-400 uppercase">Throughput Capability</span>
+                        <i class="fa-solid fa-gauge-high text-slate-500 text-xs"></i>
+                    </div>
+                    <div class="my-2">
+                        <div class="flex items-baseline gap-2">
+                            <span id="metricTpCu" class="text-xl font-mono font-bold text-slate-300">112</span>
+                            <span class="text-xs font-mono text-slate-400">Gbps/lane (Copper)</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <span id="metricTpOpt" class="text-xl font-mono font-bold text-cyan-300">3.20</span>
+                            <span class="text-xs font-mono text-slate-400">Tbps/fiber (WDM Optical)</span>
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-slate-400 border-t border-slate-800/60 pt-2 mt-1 flex justify-between font-mono">
+                        <span>Bandwidth Multiplier:</span>
+                        <span id="bandwidthMultiplier" class="font-bold text-cyan-400">28.5x Density</span>
+                    </div>
+                </div>
+
+                <!-- Metric 4: Propagation Latency -->
+                <div class="glass-card rounded-xl p-4 border-l-4 border-l-purple-500 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-mono text-slate-400 uppercase">Propagation Delay</span>
+                        <i class="fa-solid fa-stopwatch text-slate-500 text-xs"></i>
+                    </div>
+                    <div class="my-2">
+                        <div class="flex justify-between items-baseline font-mono text-xs">
+                            <span class="text-slate-400">Copper RC Delay:</span>
+                            <span id="metricLatencyCu" class="font-bold text-amber-300">14.80 ns</span>
+                        </div>
+                        <div class="flex justify-between items-baseline font-mono text-xs mt-2">
+                            <span class="text-slate-400">Optical Time-of-Flight:</span>
+                            <span id="metricLatencyOpt" class="font-bold text-purple-300">4.85 ns</span>
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-slate-400 border-t border-slate-800/60 pt-2 mt-1 flex justify-between font-mono">
+                        <span>Signal Velocity:</span>
+                        <span id="speedRatio" class="font-bold text-purple-300">3.05x Speed in Fiber</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-900 bg-slate-950 px-4 py-4 text-center text-xs text-slate-500 font-mono">
+        Beyond Real Time (BRT) • Published by Baley • Physics & Compute Interconnect Series
+    </footer>
+
+    <!-- Interactive Engine Script -->
+    <script>
+        // Simulation Parameters
+        let computeLoad = 65;
+        let scaleMode = 'rack'; // 'chip', 'rack', 'dc'
+        let viewMode = 'split'; // 'split', 'thermal'
+        let isPaused = false;
+
+        const scaleDistances = {
+            'chip': 0.001,
+            'rack': 1.0,
+            'dc': 100.0
+        };
+
+        // Canvas Elements
+        const canvasCu = document.getElementById('canvasSilicon');
+        const canvasOpt = document.getElementById('canvasGlass');
+        const ctxCu = canvasCu.getContext('2d');
+        const ctxOpt = canvasOpt.getContext('2d');
+
+        function resizeCanvases() {
+            const rectLeft = canvasCu.parentElement.getBoundingClientRect();
+            canvasCu.width = rectLeft.width;
+            canvasCu.height = rectLeft.height;
+
+            const rectRight = canvasOpt.parentElement.getBoundingClientRect();
+            canvasGlass.width = rectRight.width;
+            canvasGlass.height = rectRight.height;
+        }
+
+        window.addEventListener('resize', resizeCanvases);
+
+        // Control Event Listeners
+        const loadSlider = document.getElementById('loadSlider');
+        const loadValue = document.getElementById('loadValue');
+
+        loadSlider.addEventListener('input', (e) => {
+            computeLoad = parseInt(e.target.value);
+            loadValue.textContent = `${computeLoad}% (${getLoadLabel(computeLoad)})`;
+            updateMetrics();
+        });
+
+        function getLoadLabel(val) {
+            if (val < 25) return "Low Load";
+            if (val < 50) return "Nominal Compute";
+            if (val < 85) return "AI Surge";
+            return "Extreme Peak";
+        }
+
+        function setScale(mode) {
+            scaleMode = mode;
+            document.querySelectorAll('.scale-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-cyan-300', 'bg-slate-800', 'font-bold', 'border', 'border-cyan-500/30');
+                btn.classList.add('text-slate-400');
+            });
+
+            let activeBtnId = 'btnScaleRack';
+            if (mode === 'chip') activeBtnId = 'btnScaleChip';
+            if (mode === 'dc') activeBtnId = 'btnScaleDC';
+
+            const activeBtn = document.getElementById(activeBtnId);
+            activeBtn.classList.add('active', 'text-cyan-300', 'bg-slate-800', 'font-bold', 'border', 'border-cyan-500/30');
+            activeBtn.classList.remove('text-slate-400');
+
+            updateMetrics();
+        }
+
+        function toggleViewMode() {
+            if (viewMode === 'split') {
+                viewMode = 'thermal';
+                document.getElementById('viewModeText').textContent = 'Standard View';
+            } else {
+                viewMode = 'split';
+                document.getElementById('viewModeText').textContent = 'Thermal View';
+            }
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const icon = document.getElementById('pauseIcon');
+            const text = document.getElementById('pauseText');
+            if (isPaused) {
+                icon.className = 'fa-solid fa-play text-emerald-400';
+                text.textContent = 'Resume';
+            } else {
+                icon.className = 'fa-solid fa-pause text-amber-400';
+                text.textContent = 'Pause';
+                animate();
+            }
+        }
+
+        function resetSimulation() {
+            computeLoad = 65;
+            loadSlider.value = 65;
+            loadValue.textContent = '65% (AI Surge)';
+            setScale('rack');
+            initParticles();
+            updateMetrics();
+            showToast("Simulation settings reset!");
+        }
+
+        function scrollToSim() {
+            document.getElementById('simulationSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Drawer & Tab Toggles
+        function toggleReferenceDrawer() {
+            const body = document.getElementById('referenceDrawerBody');
+            const chevron = document.getElementById('drawerChevron');
+            const text = document.getElementById('drawerStatusText');
+
+            if (body.classList.contains('hidden')) {
+                body.classList.remove('hidden');
+                chevron.classList.add('rotate-180');
+                text.textContent = 'Collapse Panel';
+            } else {
+                body.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+                text.textContent = 'Expand Panel';
+            }
+        }
+
+        function switchRefTab(tab) {
+            const tabDiagramBtn = document.getElementById('tabDiagramBtn');
+            const tabFreepikBtn = document.getElementById('tabFreepikBtn');
+            const contentDiagram = document.getElementById('tabDiagramContent');
+            const contentFreepik = document.getElementById('tabFreepikContent');
+
+            if (tab === 'diagram') {
+                tabDiagramBtn.className = 'px-3.5 py-1.5 rounded-lg bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30';
+                tabFreepikBtn.className = 'px-3.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800';
+                contentDiagram.classList.remove('hidden');
+                contentFreepik.classList.add('hidden');
+            } else {
+                tabFreepikBtn.className = 'px-3.5 py-1.5 rounded-lg bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30';
+                tabDiagramBtn.className = 'px-3.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800';
+                contentFreepik.classList.remove('hidden');
+                contentDiagram.classList.add('hidden');
+            }
+        }
+
+        function loadFreepikGraphic() {
+            const input = document.getElementById('freepikUrlInput').value.trim();
+            const img = document.getElementById('freepikImageFrame');
+            if (input) {
+                img.src = input;
+                showToast("Loaded custom image URL");
+            } else {
+                showToast("Please enter a valid Image URL");
+            }
+        }
+
+        // Clipboard Copy Helper
+        function copyBlurb() {
+            const text = document.getElementById('editorialBlurbText').innerText;
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast("Editorial blurb copied to clipboard!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = msg;
+            toast.classList.remove('opacity-0', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-4');
+            }, 3000);
+        }
+
+        // Canvas Particle Engines
+        class ElectronParticle {
+            constructor(w, h) {
+                this.reset(w, h, true);
+            }
+
+            reset(w, h, randomX = false) {
+                this.x = randomX ? Math.random() * w : 0;
+                this.lane = Math.floor(Math.random() * 4);
+                this.yBase = h * (0.25 + this.lane * 0.18);
+                this.y = this.yBase + (Math.random() - 0.5) * 8;
+                this.baseSpeed = 1.2 + Math.random() * 0.8;
+                this.scatter = 0;
+                this.radius = 3 + Math.random() * 2;
+            }
+
+            update(w, h, load, distanceScale) {
+                const resistanceFactor = 1 + (load / 100) * 1.5 + (distanceScale > 1 ? 2.0 : 0.2);
+                const speed = (this.baseSpeed * (load / 50)) / Math.sqrt(resistanceFactor);
+                
+                this.x += speed;
+
+                const heatJitter = (load / 100) * 2.5;
+                this.y = this.yBase + (Math.random() - 0.5) * heatJitter * (distanceScale > 1 ? 2 : 1);
+
+                if (Math.random() < (load / 1000) * (distanceScale > 1 ? 5 : 1)) {
+                    this.scatter = 15;
+                    createEmbers(this.x, this.y);
+                }
+
+                if (this.scatter > 0) this.scatter--;
+
+                if (this.x > w) {
+                    this.reset(w, h, false);
+                }
+            }
+
+            draw(ctx, isThermalView) {
+                ctx.save();
+                if (isThermalView) {
+                    const gradient = ctx.createRadialGradient(this.x, this.y, 1, this.x, this.y, this.radius * 4);
+                    gradient.addColorStop(0, 'rgba(255, 69, 0, 0.9)');
+                    gradient.addColorStop(0.5, 'rgba(255, 140, 0, 0.4)');
+                    gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius * 4, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.scatter > 0 ? '#ff0000' : '#ff7700';
+                    ctx.fillStyle = this.scatter > 0 ? '#ffffff' : '#ffaa44';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class PhotonPulse {
+            constructor(w, h) {
+                this.reset(w, h, true);
+            }
+
+            reset(w, h, randomX = false) {
+                this.x = randomX ? Math.random() * w : 0;
+                this.channel = Math.floor(Math.random() * 4);
+                this.y = h * (0.25 + this.channel * 0.18);
+                const wdmColors = ['#00f0ff', '#ff00ea', '#ffe600', '#00ff99'];
+                this.color = wdmColors[this.channel];
+                this.speed = 8 + Math.random() * 3;
+                this.length = 20 + Math.random() * 15;
+            }
+
+            update(w, h, load) {
+                const speedMultiplier = 1 + (load / 200);
+                this.x += this.speed * speedMultiplier;
+
+                if (this.x > w + this.length) {
+                    this.reset(w, h, false);
+                }
+            }
+
+            draw(ctx, isThermalView) {
+                ctx.save();
+                if (isThermalView) {
+                    ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x - this.length, this.y);
+                    ctx.lineTo(this.x, this.y);
+                    ctx.stroke();
+                } else {
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = this.color;
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(this.x - this.length, this.y);
+                    ctx.lineTo(this.x, this.y);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        let embers = [];
+        function createEmbers(x, y) {
+            for (let i = 0; i < 2; i++) {
+                embers.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 1.5,
+                    vy: -Math.random() * 1.5 - 0.5,
+                    alpha: 1.0,
+                    size: 1 + Math.random() * 2
+                });
+            }
+        }
+
+        function updateAndDrawEmbers(ctx) {
+            for (let i = embers.length - 1; i >= 0; i--) {
+                let e = embers[i];
+                e.x += e.vx;
+                e.y += e.vy;
+                e.alpha -= 0.03;
+
+                if (e.alpha <= 0) {
+                    embers.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.fillStyle = `rgba(255, 69, 0, ${e.alpha})`;
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        let electrons = [];
+        let photons = [];
+
+        function initParticles() {
+            electrons = [];
+            photons = [];
+            const wCu = canvasCu.width || 300;
+            const hCu = canvasCu.height || 400;
+            const wOpt = canvasGlass.width || 300;
+            const hOpt = canvasGlass.height || 400;
+
+            for (let i = 0; i < 45; i++) {
+                electrons.push(new ElectronParticle(wCu, hCu));
+            }
+
+            for (let i = 0; i < 35; i++) {
+                photons.push(new PhotonPulse(wOpt, hOpt));
+            }
+        }
+
+        function drawSiliconScene() {
+            const w = canvasCu.width;
+            const h = canvasCu.height;
+
+            ctxCu.clearRect(0, 0, w, h);
+            ctxCu.fillStyle = viewMode === 'thermal' ? '#070202' : '#0a0d14';
+            ctxCu.fillRect(0, 0, w, h);
+
+            ctxCu.strokeStyle = viewMode === 'thermal' ? 'rgba(80, 20, 20, 0.2)' : 'rgba(30, 41, 59, 0.3)';
+            ctxCu.lineWidth = 1;
+            const gridSize = 24;
+            for (let x = 0; x < w; x += gridSize) {
+                ctxCu.beginPath();
+                ctxCu.moveTo(x, 0);
+                ctxCu.lineTo(x, h);
+                ctxCu.stroke();
+            }
+            for (let y = 0; y < h; y += gridSize) {
+                ctxCu.beginPath();
+                ctxCu.moveTo(0, y);
+                ctxCu.lineTo(w, y);
+                ctxCu.stroke();
+            }
+
+            const numLanes = 4;
+            for (let i = 0; i < numLanes; i++) {
+                const y = h * (0.25 + i * 0.18);
+
+                ctxCu.save();
+                ctxCu.strokeStyle = viewMode === 'thermal' ? 'rgba(180, 50, 0, 0.4)' : '#2a1a10';
+                ctxCu.lineWidth = 16;
+                ctxCu.beginPath();
+                ctxCu.moveTo(0, y);
+                ctxCu.lineTo(w, y);
+                ctxCu.stroke();
+
+                ctxCu.strokeStyle = viewMode === 'thermal' ? 'rgba(255, 87, 34, 0.6)' : '#663311';
+                ctxCu.lineWidth = 10;
+                ctxCu.stroke();
+
+                const nodeDistance = 80;
+                for (let nx = 40; nx < w; nx += nodeDistance) {
+                    ctxCu.fillStyle = viewMode === 'thermal' ? '#ff3300' : '#3d2516';
+                    ctxCu.beginPath();
+                    ctxCu.arc(nx, y, 4, 0, Math.PI * 2);
+                    ctxCu.fill();
+                }
+                ctxCu.restore();
+            }
+
+            const distMeters = scaleDistances[scaleMode];
+            electrons.forEach(e => {
+                if (!isPaused) e.update(w, h, computeLoad, distMeters);
+                e.draw(ctxCu, viewMode === 'thermal');
+            });
+
+            updateAndDrawEmbers(ctxCu);
+
+            if (viewMode === 'thermal') {
+                const thermalIntensity = (computeLoad / 100) * (scaleMode === 'dc' ? 0.8 : 0.4);
+                const heatGrad = ctxCu.createLinearGradient(0, h, 0, 0);
+                heatGrad.addColorStop(0, `rgba(255, 30, 0, ${thermalIntensity})`);
+                heatGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctxCu.fillStyle = heatGrad;
+                ctxCu.fillRect(0, 0, w, h);
+            }
+        }
+
+        function drawGlassScene() {
+            const w = canvasGlass.width;
+            const h = canvasGlass.height;
+
+            ctxOpt.clearRect(0, 0, w, h);
+
+            ctxOpt.fillStyle = viewMode === 'thermal' ? '#02060c' : '#070b12';
+            ctxOpt.fillRect(0, 0, w, h);
+
+            ctxOpt.strokeStyle = 'rgba(15, 28, 48, 0.4)';
+            ctxOpt.lineWidth = 1;
+            const gridSize = 24;
+            for (let x = 0; x < w; x += gridSize) {
+                ctxOpt.beginPath();
+                ctxOpt.moveTo(x, 0);
+                ctxOpt.lineTo(x, h);
+                ctxOpt.stroke();
+            }
+            for (let y = 0; y < h; y += gridSize) {
+                ctxOpt.beginPath();
+                ctxOpt.moveTo(0, y);
+                ctxOpt.lineTo(w, y);
+                ctxOpt.stroke();
+            }
+
+            const numChannels = 4;
+            for (let i = 0; i < numChannels; i++) {
+                const y = h * (0.25 + i * 0.18);
+
+                ctxOpt.save();
+                ctxOpt.strokeStyle = 'rgba(0, 240, 255, 0.12)';
+                ctxOpt.lineWidth = 18;
+                ctxOpt.beginPath();
+                ctxOpt.moveTo(0, y);
+                ctxOpt.lineTo(w, y);
+                ctxOpt.stroke();
+
+                ctxOpt.strokeStyle = 'rgba(224, 247, 255, 0.25)';
+                ctxOpt.lineWidth = 6;
+                ctxOpt.stroke();
+                ctxOpt.restore();
+            }
+
+            photons.forEach(p => {
+                if (!isPaused) p.update(w, h, computeLoad);
+                p.draw(ctxOpt, viewMode === 'thermal');
+            });
+        }
+
+        function updateMetrics() {
+            const load = computeLoad;
+            const distance = scaleDistances[scaleMode];
+
+            const energyCopper = (1.5 + 4.5 * Math.pow(distance, 0.4) * (load / 50)).toFixed(2);
+            const energyOptical = (0.12 + 0.08 * (load / 100)).toFixed(2);
+
+            document.getElementById('metricEnergyCu').textContent = energyCopper;
+            document.getElementById('metricEnergyOpt').textContent = energyOptical;
+
+            const ratioEnergy = (parseFloat(energyCopper) / parseFloat(energyOptical)).toFixed(1);
+            document.getElementById('energyRatio').textContent = `${ratioEnergy}x Lower Energy`;
+
+            const tempCopper = (25 + (Math.pow(load / 100, 2) * 60 * (1 + Math.log10(distance + 1)))).toFixed(1);
+            const tempOptical = (22 + (load / 100) * 4.5).toFixed(1);
+
+            document.getElementById('metricTempCu').textContent = `${tempCopper} °C`;
+            document.getElementById('metricTempOpt').textContent = `${tempOptical} °C`;
+
+            const barCuWidth = Math.min(100, Math.max(15, (tempCopper / 100) * 100));
+            const barOptWidth = Math.min(100, Math.max(10, (tempOptical / 100) * 100));
+            document.getElementById('barTempCu').style.width = `${barCuWidth}%`;
+            document.getElementById('barTempOpt').style.width = `${barOptWidth}%`;
+
+            const coolingOverhead = Math.round((parseFloat(tempCopper) - 25) * 0.7);
+            document.getElementById('coolingTax').textContent = `+${coolingOverhead}% Chillers`;
+
+            const throttleEl = document.getElementById('leftThrottleStatus');
+            if (tempCopper > 80) {
+                throttleEl.textContent = 'HEAVY (THROTTLED)';
+                throttleEl.className = 'text-red-500 font-bold animate-pulse';
+            } else if (tempCopper > 55) {
+                throttleEl.textContent = 'MODERATE';
+                throttleEl.className = 'text-amber-400 font-bold';
+            } else {
+                throttleEl.textContent = 'OPTIMAL';
+                throttleEl.className = 'text-emerald-400 font-bold';
+            }
+
+            const copperLaneGbps = Math.max(10, Math.round(112 / (1 + Math.pow(distance, 0.5) * 0.8)));
+            const opticalTbps = (3.2 * (load / 100) + 0.8).toFixed(2);
+
+            document.getElementById('metricTpCu').textContent = copperLaneGbps;
+            document.getElementById('metricTpOpt').textContent = opticalTbps;
+
+            const densityMult = ((parseFloat(opticalTbps) * 1000) / copperLaneGbps).toFixed(1);
+            document.getElementById('bandwidthMultiplier').textContent = `${densityMult}x Density`;
+
+            const opticalLatencyNs = (distance * 5.0 + 0.15).toFixed(2);
+            const copperLatencyNs = (distance * 7.5 + (load / 100) * 3.5 + 0.8).toFixed(2);
+
+            document.getElementById('metricLatencyCu').textContent = `${copperLatencyNs} ns`;
+            document.getElementById('metricLatencyOpt').textContent = `${opticalLatencyNs} ns`;
+
+            const speedRatio = (parseFloat(copperLatencyNs) / parseFloat(opticalLatencyNs)).toFixed(2);
+            document.getElementById('speedRatio').textContent = `${speedRatio}x Speed in Fiber`;
+        }
+
+        function animate() {
+            if (isPaused) return;
+
+            drawSiliconScene();
+            drawGlassScene();
+
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvases();
+            initParticles();
+            updateMetrics();
+            animate();
+        };
+    </script>
+</body>
+</html>
