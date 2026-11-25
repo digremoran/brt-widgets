@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orch-OR to Kerr ER=EPR · Scale Invariance | Beyond Real Time</title>
+<style>
+  :root {
+    --bg: #04070f;
+    --panel: rgba(8, 14, 26, 0.9);
+    --border: rgba(77, 238, 234, 0.3);
+    --cyan: #38e8e1;
+    --gold: #f5b942;
+    --violet: #a78bfa;
+    --rose: #fb7185;
+    --green: #34d399;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 44%, #0d1930 0%, var(--bg) 82%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    user-select: none;
+  }
+  #scene-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+  }
+  #scene-canvas:active { cursor: grabbing; }
+
+  .hud-header {
+    position: fixed;
+    top: 12px;
+    left: 14px;
+    z-index: 10;
+    width: 390px;
+    max-width: calc(100vw - 28px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 11px 14px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+  .kicker {
+    font-size: 9.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  .title {
+    font-size: 15.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #f8fafc;
+  }
+  .subtitle {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.35;
+  }
+
+  .telemetry {
+    position: fixed;
+    top: 12px;
+    right: 14px;
+    z-index: 10;
+    width: 268px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 9px 13px;
+    font-size: 11px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+  .tel-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3.5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .tel-row:last-child { border-bottom: none; }
+  .tel-lbl { color: var(--muted); }
+  .tel-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 600;
+    color: var(--cyan);
+  }
+  .tel-val.gold { color: var(--gold); }
+  .tel-val.violet { color: var(--violet); }
+  .tel-val.ok { color: var(--green); }
+  .tel-val.warn { color: var(--rose); }
+
+  .controls {
+    position: fixed;
+    bottom: 8px;
+    left: 14px;
+    z-index: 10;
+    width: 345px;
+    max-width: calc(100vw - 28px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 9px 13px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.65);
+  }
+  .ctrl-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .ctrl-head span:first-child { color: #e2e8f0; font-weight: 500; }
+  .ctrl-head span:last-child {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--cyan);
+    font-weight: 600;
+    font-size: 10.5px;
+  }
+  .ctrl-group { margin-bottom: 7px; }
+  .scale-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    accent-color: var(--cyan);
+    cursor: pointer;
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 4px;
+  }
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+  button {
+    background: rgba(15, 23, 42, 0.9);
+    color: var(--text);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+  button:hover { border-color: var(--cyan); color: #fff; background: rgba(56, 232, 225, 0.14); }
+  button.active {
+    background: rgba(56, 232, 225, 0.22);
+    border-color: var(--cyan);
+    color: #fff;
+  }
+  button.gold-btn { border-color: rgba(245, 185, 66, 0.45); color: var(--gold); }
+  button.gold-btn:hover { background: rgba(245, 185, 66, 0.16); }
+
+  .legend {
+    position: fixed;
+    bottom: 8px;
+    right: 14px;
+    z-index: 10;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 10.5px;
+    max-width: 245px;
+  }
+  .leg-item { display: flex; align-items: center; gap: 7px; margin: 3px 0; color: var(--muted); }
+  .swatch { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  .callout {
+    position: fixed;
+    z-index: 6;
+    pointer-events: none;
+    background: rgba(5, 9, 18, 0.86);
+    border: 1px solid rgba(56, 232, 225, 0.45);
+    color: var(--cyan);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+  }
+  .callout.gold { border-color: rgba(245, 185, 66, 0.55); color: var(--gold); }
+  .callout.violet { border-color: rgba(167, 139, 250, 0.55); color: var(--violet); }
+
+  @media (max-width: 760px) {
+    .telemetry, .legend { display: none; }
+    .controls { width: calc(100% - 28px); }
+  }
+</style>
+</head>
+<body>
+<canvas id="scene-canvas"></canvas>
+
+<div class="hud-header">
+  <div class="kicker"><span class="dot"></span>Beyond Real Time · Gallery Three · Scale Invariance</div>
+  <div class="title">Orch-OR Lattice ↔ Kerr Spinning ER=EPR Throat</div>
+  <div class="subtitle">From a 25 nm biological waveguide to a rotating Einstein–Rosen bridge: twist, path-integral recycling, and γ ≈ 0.57721 lock geometry across scales.</div>
+</div>
+
+<div class="telemetry">
+  <div class="tel-row"><span class="tel-lbl">Scale Regime</span><span class="tel-val violet" id="tel-regime">Hybrid Bridge (50%)</span></div>
+  <div class="tel-row"><span class="tel-lbl">Kerr Spin (a / M)</span><span class="tel-val gold" id="tel-spin">0.94 c</span></div>
+  <div class="tel-row"><span class="tel-lbl">Slippage Lock (γ)</span><span class="tel-val gold" id="tel-gamma">0.57721</span></div>
+  <div class="tel-row"><span class="tel-lbl">Throat / Lattice Sync</span><span class="tel-val ok" id="tel-sync">98.8% (Traversable)</span></div>
+  <div class="tel-row"><span class="tel-lbl">Topology</span><span class="tel-val" id="tel-topo">13-PF ↔ Ring Throat</span></div>
+</div>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-head">
+      <span>Scale Morph (25 nm Lattice → ER=EPR Throat)</span>
+      <span id="val-morph">50%</span>
+    </div>
+    <input type="range" id="rng-morph" min="0" max="100" value="50">
+    <div class="scale-ticks">
+      <span>25 nm Tubulin</span>
+      <span>Scale Bridge</span>
+      <span>Kerr Wormhole</span>
+    </div>
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-head">
+      <span>Kerr Angular Momentum / Helical Twist (a/M)</span>
+      <span id="val-spin">0.94</span>
+    </div>
+    <input type="range" id="rng-spin" min="0.00" max="0.99" step="0.01" value="0.94">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-head">
+      <span>Euler–Mascheroni Phase Cushion (γ)</span>
+      <span id="val-gamma">0.57721</span>
+    </div>
+    <input type="range" id="rng-gamma" min="0.00" max="1.00" step="0.00001" value="0.57721">
+  </div>
+
+  <div class="btn-row">
+    <button data-preset="lattice">25 nm Lattice</button>
+    <button class="active" data-preset="bridge">Scale Bridge</button>
+    <button data-preset="wormhole">Kerr ER=EPR</button>
+    <button data-preset="throat">End-On Throat</button>
+    <button class="gold-btn" id="btn-reset-gamma">Lock γ = 0.57721</button>
+    <button id="btn-labels">Labels: ON</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="leg-item"><span class="swatch" style="background:#38bdf8"></span>α/β-Tubulin Shell ↔ Throat Mesh</div>
+  <div class="leg-item"><span class="swatch" style="background:#f5b942"></span>Kerr Ring Singularity / Waist (r = 0)</div>
+  <div class="leg-item"><span class="swatch" style="background:#38e8e1"></span>Frame-Dragged Twisted-Light Skeins</div>
+  <div class="leg-item"><span class="swatch" style="background:#a78bfa"></span>Non-Local ER=EPR Path Recycling</div>
+</div>
+
+<div class="callout" id="lbl-mouth-a">Region I · Local 25 nm / Upper Mouth</div>
+<div class="callout gold" id="lbl-waist">Kerr Ring Waist (r = 0) · Angular Twist</div>
+<div class="callout violet" id="lbl-mouth-b">Region II · Conjugate ER=EPR Mouth</div>
+
+<script>
+(function () {
+  var canvas = document.getElementById('scene-canvas');
+  var ctx = canvas.getContext('2d');
+
+  var morphPct = 50;
+  var spinVal = 0.94;
+  var gammaVal = 0.57721;
+  var showLabels = true;
+  var yaw = 0.58;
+  var pitch = 0.34;
+  var zoomDist = 1.0;
+
+  var rngMorph = document.getElementById('rng-morph');
+  var rngSpin  = document.getElementById('rng-spin');
+  var rngGamma = document.getElementById('rng-gamma');
+
+  var lblA = document.getElementById('lbl-mouth-a');
+  var lblW = document.getElementById('lbl-waist');
+  var lblB = document.getElementById('lbl-mouth-b');
+
+  function updateReadouts() {
+    document.getElementById('val-morph').textContent = morphPct + '%';
+    document.getElementById('val-spin').textContent = spinVal.toFixed(2);
+    document.getElementById('tel-spin').textContent = spinVal.toFixed(2) + ' c';
+
+    var gStr = gammaVal.toFixed(5);
+    document.getElementById('val-gamma').textContent = gStr;
+    document.getElementById('tel-gamma').textContent = gStr;
+
+    var regEl = document.getElementById('tel-regime');
+    var topoEl = document.getElementById('tel-topo');
+    if (morphPct < 25) {
+      regEl.textContent = '25 nm Bio-Lattice';
+      topoEl.textContent = '13-PF B-Cylinder';
+    } else if (morphPct < 75) {
+      regEl.textContent = 'Scale Bridge (' + morphPct + '%)';
+      topoEl.textContent = '13-PF ↔ Ring Throat';
+    } else {
+      regEl.textContent = 'Kerr ER=EPR Throat';
+      topoEl.textContent = 'Dual-Mouth Wormhole';
+    }
+  }
+
+  rngMorph.addEventListener('input', function (e) { morphPct = Number(e.target.value); updateReadouts(); });
+  rngSpin.addEventListener('input', function (e) { spinVal = Number(e.target.value); updateReadouts(); });
+  rngGamma.addEventListener('input', function (e) { gammaVal = Number(e.target.value); updateReadouts(); });
+
+  document.getElementById('btn-reset-gamma').addEventListener('click', function () {
+    gammaVal = 0.57721;
+    rngGamma.value = gammaVal;
+    updateReadouts();
+  });
+
+  document.getElementById('btn-labels').addEventListener('click', function (e) {
+    showLabels = !showLabels;
+    e.target.textContent = 'Labels: ' + (showLabels ? 'ON' : 'OFF');
+  });
+
+  var presets = {
+    lattice:  { yaw: 0.56, pitch: 0.32, zoom: 1.0,  morph: 0 },
+    bridge:   { yaw: 0.58, pitch: 0.34, zoom: 1.0,  morph: 50 },
+    wormhole: { yaw: 0.62, pitch: 0.36, zoom: 1.08, morph: 100 },
+    throat:   { yaw: 0.05, pitch: 0.08, zoom: 1.15, morph: 85 }
+  };
+
+  var presetBtns = document.querySelectorAll('button[data-preset]');
+  presetBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      presetBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      var p = presets[btn.getAttribute('data-preset')];
+      yaw = p.yaw; pitch = p.pitch; zoomDist = p.zoom;
+      morphPct = p.morph;
+      rngMorph.value = morphPct;
+      updateReadouts();
+    });
+  });
+
+  var dragging = false, lastX = 0, lastY = 0;
+  canvas.addEventListener('pointerdown', function (e) { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+  window.addEventListener('pointerup', function () { dragging = false; });
+  window.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    yaw += (e.clientX - lastX) * 0.008;
+    pitch = Math.max(-1.2, Math.min(1.2, pitch + (e.clientY - lastY) * 0.008));
+    lastX = e.clientX; lastY = e.clientY;
+  });
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    zoomDist = Math.max(0.55, Math.min(1.85, zoomDist + e.deltaY * 0.0008));
+  }, { passive: false });
+
+  function fitCanvas() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = canvas.clientWidth || window.innerWidth || 900;
+    var h = canvas.clientHeight || window.innerHeight || 720;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  fitCanvas();
+  window.addEventListener('resize', fitCanvas);
+  updateReadouts();
+
+  function project(x, y, z, cx, cy, scale) {
+    var cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+    var cosP = Math.cos(pitch), sinP = Math.sin(pitch);
+    var x1 = x * cosY - z * sinY;
+    var z1 = x * sinY + z * cosY;
+    var y2 = y * cosP - z1 * sinP;
+    var z2 = y * sinP + z1 * cosP;
+    var persp = 620 / (620 + z2 * scale * 0.65);
+    return { sx: cx + x1 * scale * persp, sy: cy + y2 * scale * persp, p: persp };
+  }
+
+  var t0 = performance.now();
+  function renderFrame(now) {
+    requestAnimationFrame(renderFrame);
+    var t = (now - t0) * 0.001;
+    var w = canvas.clientWidth || window.innerWidth || 900;
+    var h = canvas.clientHeight || window.innerHeight || 720;
+    ctx.clearRect(0, 0, w, h);
+
+    var m = morphPct / 100;
+    var deltaG = Math.abs(gammaVal - 0.57721);
+    var lock = Math.max(0.2, Math.exp(-deltaG * 3.8));
+    var jitter = (1 - lock) * 7.5;
+
+    var syncEl = document.getElementById('tel-sync');
+    var pct = (lock * 100).toFixed(1);
+    if (lock > 0.84) { syncEl.textContent = pct + '% (Traversable)'; syncEl.className = 'tel-val ok'; }
+    else if (lock > 0.50) { syncEl.textContent = pct + '% (Cauchy Jitter)'; syncEl.className = 'tel-val gold'; }
+    else { syncEl.textContent = pct + '% (Throat Pinch)'; syncEl.className = 'tel-val warn'; }
+
+    var cx = w * 0.52, cy = h * 0.46;
+    var scale = Math.min(w, h) * 0.28 / zoomDist;
+    var span = 1.45;
+
+    ctx.fillStyle = 'rgba(203,213,225,0.45)';
+    for (var s = 0; s < 75; s++) {
+      var sx = ((s * 197 + t * 6) % w);
+      var sy = ((s * 131) % h);
+      ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+
+    var twist = 0.5 + spinVal * 1.8;
+    for (var sk = 0; sk < 4; sk++) {
+      ctx.beginPath();
+      for (var k = 0; k <= 60; k++) {
+        var u = (k / 60) * 2 - 1;
+        var ang = (sk / 4) * Math.PI * 2 + u * (2.5 + spinVal * 3.5) + t * twist;
+        var rCore = 0.28 + 0.14 * Math.sin(u * Math.PI * 2);
+        var pt = project(Math.cos(ang) * rCore, Math.sin(ang) * rCore, u * span, cx, cy, scale);
+        if (k === 0) ctx.moveTo(pt.sx, pt.sy); else ctx.lineTo(pt.sx, pt.sy);
+      }
+      ctx.strokeStyle = sk % 2 === 0 ? 'rgba(56,232,225,0.88)' : 'rgba(245,185,66,0.88)';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+    }
+
+    var ptsList = [];
+    var pfCount = 13, rows = 20;
+    for (var pf = 0; pf < pfCount; pf++) {
+      var baseTh = (pf / pfCount) * Math.PI * 2;
+      for (var r = 0; r < rows; r++) {
+        var ur = (r / (rows - 1)) * 2 - 1;
+        var rad = (0.85 * (1 - m) + (0.42 + spinVal * 0.12 + Math.pow(Math.abs(ur), 1.8) * 1.15) * m);
+        var drag = m * spinVal * (1 - Math.abs(ur)) * 0.9 * Math.sin(t * 1.3 + ur * 2);
+        var th = baseTh + drag + t * 0.15 * spinVal;
+        var jx = Math.sin(t * 19 + pf * 3 + r) * jitter * 0.03;
+        var jy = Math.cos(t * 17 + pf * 5 + r) * jitter * 0.03;
+        var pr = project(Math.cos(th) * rad + jx, Math.sin(th) * rad + jy, ur * span, cx, cy, scale);
+        ptsList.push({ sx: pr.sx, sy: pr.sy, p: pr.p, isAlpha: r % 2 === 0 });
+      }
+    }
+    ptsList.sort(function (a, b) { return a.p - b.p; });
+    for (var idx = 0; idx < ptsList.length; idx++) {
+      var item = ptsList[idx];
+      ctx.beginPath();
+      ctx.arc(item.sx, item.sy, Math.max(2.4, 5.4 * item.p), 0, Math.PI * 2);
+      ctx.fillStyle = m < 0.5
+        ? (item.isAlpha ? '#38bdf8' : '#34d399')
+        : (item.isAlpha ? '#38e8e1' : '#a78bfa');
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    for (var wSeg = 0; wSeg <= 48; wSeg++) {
+      var wa = (wSeg / 48) * Math.PI * 2 + t * twist;
+      var wr = 0.42 + spinVal * 0.12;
+      var wp = project(Math.cos(wa) * wr, Math.sin(wa) * wr, 0, cx, cy, scale);
+      if (wSeg === 0) ctx.moveTo(wp.sx, wp.sy); else ctx.lineTo(wp.sx, wp.sy);
+    }
+    ctx.strokeStyle = '#f5b942';
+    ctx.lineWidth = 2.8;
+    ctx.stroke();
+
+    var pA = project(0, 0.95, span * 0.9, cx, cy, scale);
+    var pW = project(0.65, -0.55, 0, cx, cy, scale);
+    var pB = project(0, 0.95, -span * 0.9, cx, cy, scale);
+    var op = showLabels ? '0.92' : '0';
+    lblA.style.left = pA.sx + 'px'; lblA.style.top = pA.sy + 'px'; lblA.style.opacity = op;
+    lblW.style.left = pW.sx + 'px'; lblW.style.top = pW.sy + 'px'; lblW.style.opacity = op;
+    lblB.style.left = pB.sx + 'px'; lblB.style.top = pB.sy + 'px'; lblB.style.opacity = op;
+  }
+  requestAnimationFrame(renderFrame);
+})();
+</script>
+</body>
+</html>
