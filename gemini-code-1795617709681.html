@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orch-OR 25nm Microtubule Lattice & Helical Light Core | Beyond Real Time</title>
+<style>
+  :root {
+    --bg: #05080f;
+    --panel: rgba(10, 16, 28, 0.84);
+    --border: rgba(88, 178, 255, 0.25);
+    --cyan: #4deeea;
+    --gold: #f5b942;
+    --alpha: #3b82f6;
+    --beta: #6366f1;
+    --seam: #f43f5e;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: radial-gradient(circle at 50% 42%, #0c162b 0%, var(--bg) 78%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    user-select: none;
+  }
+  #canvas-container { position: fixed; inset: 0; }
+
+  /* HUD Header */
+  .hud-header {
+    position: fixed; top: 12px; left: 14px; z-index: 10;
+    background: var(--panel); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); border-radius: 10px;
+    padding: 10px 14px; max-width: 350px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+  }
+  .hud-kicker {
+    font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--cyan); font-weight: 700; margin-bottom: 4px;
+  }
+  .hud-title {
+    font-size: 15px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.25;
+  }
+  .hud-sub {
+    font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.35;
+  }
+
+  /* Telemetry Box */
+  .telemetry {
+    position: fixed; top: 12px; right: 14px; z-index: 10;
+    background: var(--panel); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); border-radius: 10px;
+    padding: 9px 13px; width: 245px;
+    font-size: 11px; box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+  }
+  .tel-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .tel-row:last-child { border-bottom: none; }
+  .tel-label { color: var(--muted); }
+  .tel-val { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: var(--cyan); }
+  .tel-val.gold { color: var(--gold); }
+  .tel-val.ok { color: #34d399; }
+  .tel-val.warn { color: #fb7185; }
+
+  /* Controls Panel */
+  .controls {
+    position: fixed; bottom: 8px; left: 14px; z-index: 10;
+    background: var(--panel); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); border-radius: 10px;
+    padding: 8px 12px; width: 292px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+  }
+  .ctrl-group { margin-bottom: 6px; }
+  .ctrl-group:last-child { margin-bottom: 0; }
+  .ctrl-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; margin-bottom: 2px;
+  }
+  .ctrl-header span:first-child { color: var(--text); font-weight: 500; }
+  .ctrl-header span:last-child {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--cyan); font-size: 10.5px;
+  }
+  input[type="range"] {
+    width: 100%; accent-color: var(--cyan); cursor: pointer; height: 4px;
+    background: rgba(255,255,255,0.12); border-radius: 4px;
+  }
+  .btn-row {
+    display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;
+  }
+  button {
+    background: rgba(30, 41, 59, 0.85); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 7px; font-size: 10.5px; font-weight: 500;
+    cursor: pointer; transition: all 0.18s ease;
+  }
+  button:hover { border-color: var(--cyan); color: #fff; background: rgba(77, 238, 234, 0.14); }
+  button.active {
+    background: rgba(77, 238, 234, 0.22); border-color: var(--cyan); color: #fff;
+  }
+  button.gold-btn { border-color: rgba(245, 185, 66, 0.45); color: var(--gold); }
+  button.gold-btn:hover { background: rgba(245, 185, 66, 0.18); }
+
+  /* Legend */
+  .legend {
+    position: fixed; bottom: 8px; right: 14px; z-index: 10;
+    background: var(--panel); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); border-radius: 10px;
+    padding: 8px 12px; font-size: 10.5px; max-width: 235px;
+  }
+  .leg-item { display: flex; align-items: center; gap: 7px; margin: 3px 0; color: var(--muted); }
+  .swatch { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Projected 3D Callouts */
+  .callout {
+    position: fixed; pointer-events: none; z-index: 5;
+    background: rgba(5, 8, 15, 0.78); border: 1px solid rgba(77, 238, 234, 0.4);
+    border-radius: 5px; padding: 3px 7px; font-size: 10.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--cyan); white-space: nowrap;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.15s ease;
+  }
+  .callout.gold { border-color: rgba(245, 185, 66, 0.5); color: var(--gold); }
+  .callout.seam { border-color: rgba(244, 63, 94, 0.55); color: #fda4af; }
+
+  /* Field Notes Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 30;
+    background: rgba(3, 6, 12, 0.75); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-card {
+    background: #0b1222; border: 1px solid var(--border);
+    border-radius: 12px; max-width: 580px; width: 100%;
+    padding: 22px 24px; box-shadow: 0 24px 60px rgba(0,0,0,0.75);
+    line-height: 1.55; font-size: 13.5px;
+  }
+  .modal-card h2 { font-size: 17px; color: var(--cyan); margin-bottom: 10px; }
+  .modal-card p { margin-bottom: 10px; color: #cbd5e1; }
+  .modal-card strong { color: #fff; }
+  .modal-close { margin-top: 8px; float: right; padding: 6px 14px; }
+
+  @media (max-width: 720px) {
+    .telemetry, .legend { display: none; }
+    .controls { width: calc(100% - 28px); }
+    .hud-header { max-width: calc(100% - 28px); }
+  }
+</style>
+</head>
+<body>
+<div id="canvas-container"></div>
+
+<!-- Top-Left Title HUD -->
+<div class="hud-header">
+  <div class="hud-kicker">Beyond Real Time · Gallery Two</div>
+  <div class="hud-title">25nm Microtubule Lattice &amp; Twisted-Light Core</div>
+  <div class="hud-sub">13-protofilament B-lattice α/β-tubulin shell coupled via analog phase slippage (γ ≈ 0.57721) to a coaxial optical lumen.</div>
+</div>
+
+<!-- Top-Right Live Telemetry -->
+<div class="telemetry">
+  <div class="tel-row"><span class="tel-label">Outer / Lumen Ø</span><span class="tel-val">25.0 nm / 15.0 nm</span></div>
+  <div class="tel-row"><span class="tel-label">Lattice Geometry</span><span class="tel-val">13-PF · 3-Start B-Seam</span></div>
+  <div class="tel-row"><span class="tel-label">Slippage Factor (γ)</span><span class="tel-val gold" id="tel-gamma">0.57721</span></div>
+  <div class="tel-row"><span class="tel-label">Core–Shell Coherence</span><span class="tel-val ok" id="tel-coh">99.2% (Resilient)</span></div>
+  <div class="tel-row"><span class="tel-label">Active 2-Bit Dipoles</span><span class="tel-val" id="tel-dipoles">0 / 260</span></div>
+</div>
+
+<!-- Bottom-Left Interactive Controls -->
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-header">
+      <span>Shell Cutaway (Inspect Lumen)</span>
+      <span id="val-cutaway">38%</span>
+    </div>
+    <input type="range" id="slider-cutaway" min="0" max="100" value="38">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-header">
+      <span>Analog Slippage Tolerance (γ)</span>
+      <span id="val-gamma">0.57721</span>
+    </div>
+    <input type="range" id="slider-gamma" min="0.00" max="1.00" step="0.00001" value="0.57721">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-header">
+      <span>Dipole / Optical Beat Frequency</span>
+      <span id="val-freq">1.00×</span>
+    </div>
+    <input type="range" id="slider-freq" min="0.1" max="2.5" step="0.05" value="1.0">
+  </div>
+
+  <div class="btn-row">
+    <button class="active" data-preset="cutaway">Cutaway Core</button>
+    <button data-preset="exterior">Exterior Lattice</button>
+    <button data-preset="cross">End-On 25/15nm</button>
+    <button data-preset="seam">B-Lattice Seam</button>
+    <button class="gold-btn" id="btn-reset-gamma">Reset γ = 0.57721</button>
+    <button id="btn-labels">Labels: ON</button>
+    <button id="btn-notes">Field Notes</button>
+  </div>
+</div>
+
+<!-- Bottom-Right Legend -->
+<div class="legend">
+  <div class="leg-item"><span class="swatch" style="background:#3b82f6"></span>α-Tubulin Subunit (4 nm)</div>
+  <div class="leg-item"><span class="swatch" style="background:#818cf8"></span>β-Tubulin Dipole (2-Bit State)</div>
+  <div class="leg-item"><span class="swatch" style="background:#f43f5e"></span>3-Start B-Lattice Seam</div>
+  <div class="leg-item"><span class="swatch" style="background:#4deeea"></span>Coaxial Twisted-Light Skeins</div>
+  <div class="leg-item"><span class="swatch" style="background:#f5b942"></span>Radial Least-Action Coupling</div>
+</div>
+
+<!-- 3D Projected Dimension Callouts -->
+<div class="callout" id="lbl-outer">Outer Wall: 25.0 nm (13 Protofilaments)</div>
+<div class="callout gold" id="lbl-lumen">Inner Lumen: 15.0 nm (Helical Light Core)</div>
+<div class="callout seam" id="lbl-seam">B-Lattice Seam (3-Start Helical Offset)</div>
+
+<!-- Field Notes Modal -->
+<div class="modal-backdrop" id="modal-notes">
+  <div class="modal-card">
+    <h2>Orch-OR, Least Action &amp; Analog Slippage (γ ≈ 0.57721)</h2>
+    <p><strong>1. The 25 nm Biological Waveguide:</strong> Eukaryotic microtubules assemble 13 parallel protofilaments of alternating α- and β-tubulin dimers into a hollow cylinder (25 nm outer diameter, 15 nm inner lumen) with a 3-start helical pitch and an A/B-lattice seam.</p>
+    <p><strong>2. Analog Core Inside a 2-Bit Digital Shell:</strong> Rather than acting as rigid zero-tolerance switches, β-tubulin hydrophobic pockets support collective dipole oscillations coupled to helical optical modes inside the 15 nm water-ordered lumen.</p>
+    <p><strong>3. Why Slippage Keeps Room-Temperature Coherence Alive:</strong> At 310 K, thermal agitation destroys brittle perfection. Operating near the Euler–Mascheroni slippage constant (<strong>γ ≈ 0.57721</strong>, "99% is good enough") absorbs phase jitter so the analog light braid and outer tubulin shell remain locked via least-action pathways.</p>
+    <p style="font-size:12px;color:#94a3b8;">Drag to orbit · Scroll to zoom · Right-drag to pan · Inspired by Penrose, Hameroff &amp; Beyond Real Time.</p>
+    <button class="modal-close" id="btn-close-notes">Close</button>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// --- Scene & Renderer ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x05080f, 0.011);
+
+const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(21, 11.5, 27);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 8;
+controls.maxDistance = 68;
+controls.target.set(0, -2.8, 0);
+
+// --- Lighting ---
+scene.add(new THREE.AmbientLight(0x334155, 1.35));
+const keyLight = new THREE.DirectionalLight(0xe0f2fe, 1.9);
+keyLight.position.set(18, 26, 22);
+scene.add(keyLight);
+
+const rimLight = new THREE.DirectionalLight(0x6366f1, 1.1);
+rimLight
