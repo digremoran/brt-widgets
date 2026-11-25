@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orch-OR 25nm Microtubule Lattice & Helical Light Core | Beyond Real Time</title>
+<style>
+  :root {
+    --bg: #05080f;
+    --panel: rgba(10, 16, 28, 0.84);
+    --border: rgba(88, 178, 255, 0.25);
+    --cyan: #4deeea;
+    --gold: #f5b942;
+    --alpha: #3b82f6;
+    --beta: #6366f1;
+    --seam: #f43f5e;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: radial-gradient(circle at 50% 42%, #0c162b 0%, var(--bg) 78%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    user-select: none;
+  }
+  #canvas-container { position: fixed; inset: 0; }
+
+  /* HUD Header */
+  .hud-header {
+    position: fixed; top: 12px; left: 14px; z-index: 10;
+    background: var(--panel); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); border-radius: 10px;
+    padding: 10px 14px; max-width: 350px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+  }
+  .hud-kicker {
+    font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--cyan); font-weight: 700; margin-bottom: 4px;
+  }
+  .hud-title {
+    font-size: 15px; font-weight: 700; letter-spacing: 0.01em; line-height: 1.25;
+  }
+  .hud-sub {
+    font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.35;
+  }
+
+  /* Telemetry Box */
+  .telemetry {
+    position: fixed; top: 12px; right: 14px; z-index: 10;
+    background: var(--panel); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); border-radius: 10px;
+    padding: 9px 13px; width: 245px;
+    font-size: 11px; box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+  }
+  .tel-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .tel-row:last-child { border-bottom: none; }
+  .tel-label { color: var(--muted); }
+  .tel-val { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: var(--cyan); }
+  .tel-val.gold { color: var(--gold); }
+  .tel-val.ok { color: #34d399; }
+  .tel-val.warn { color: #fb7185; }
+
+  /* Controls Panel — shifted further down with compact spacing */
+  .controls {
+    position: fixed; bottom: 4px; left: 14px; z-index: 10;
+    background: var(--panel); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); border-radius: 10px;
+    padding: 7px 11px; width: 290px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+  }
+  .ctrl-group { margin-bottom: 5px; }
+  .ctrl-group:last-child { margin-bottom: 0; }
+  .ctrl-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; margin-bottom: 2px;
+  }
+  .ctrl-header span:first-child { color: var(--text); font-weight: 500; }
+  .ctrl-header span:last-child {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--cyan); font-size: 10.5px;
+  }
+  input[type="range"] {
+    width: 100%; accent-color: var(--cyan); cursor: pointer; height: 4px;
+    background: rgba(255,255,255,0.12); border-radius: 4px;
+  }
+  .btn-row {
+    display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;
+  }
+  button {
+    background: rgba(30, 41, 59, 0.85); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 4px 7px; font-size: 10.5px; font-weight: 500;
+    cursor: pointer; transition: all 0.18s ease;
+  }
+  button:hover { border-color: var(--cyan); color: #fff; background: rgba(77, 238, 234, 0.14); }
+  button.active {
+    background: rgba(77, 238, 234, 0.22); border-color: var(--cyan); color: #fff;
+  }
+  button.gold-btn { border-color: rgba(245, 185, 66, 0.45); color: var(--gold); }
+  button.gold-btn:hover { background: rgba(245, 185, 66, 0.18); }
+
+  /* Legend */
+  .legend {
+    position: fixed; bottom: 4px; right: 14px; z-index: 10;
+    background: var(--panel); border: 1px solid var(--border);
+    backdrop-filter: blur(10px); border-radius: 10px;
+    padding: 8px 12px; font-size: 10.5px; max-width: 235px;
+  }
+  .leg-item { display: flex; align-items: center; gap: 7px; margin: 3px 0; color: var(--muted); }
+  .swatch { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Projected 3D Callouts */
+  .callout {
+    position: fixed; pointer-events: none; z-index: 5;
+    background: rgba(5, 8, 15, 0.78); border: 1px solid rgba(77, 238, 234, 0.4);
+    border-radius: 5px; padding: 3px 7px; font-size: 10.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--cyan); white-space: nowrap;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.15s ease;
+  }
+  .callout.gold { border-color: rgba(245, 185, 66, 0.5); color: var(--gold); }
+  .callout.seam { border-color: rgba(244, 63, 94, 0.55); color: #fda4af; }
+
+  /* Field Notes Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 30;
+    background: rgba(3, 6, 12, 0.75); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-card {
+    background: #0b1222; border: 1px solid var(--border);
+    border-radius: 12px; max-width: 580px; width: 100%;
+    padding: 22px 24px; box-shadow: 0 24px 60px rgba(0,0,0,0.75);
+    line-height: 1.55; font-size: 13.5px;
+  }
+  .modal-card h2 { font-size: 17px; color: var(--cyan); margin-bottom: 10px; }
+  .modal-card p { margin-bottom: 10px; color: #cbd5e1; }
+  .modal-card strong { color: #fff; }
+  .modal-close { margin-top: 8px; float: right; padding: 6px 14px; }
+
+  @media (max-width: 720px) {
+    .telemetry, .legend { display: none; }
+    .controls { width: calc(100% - 28px); }
+    .hud-header { max-width: calc(100% - 28px); }
+  }
+</style>
+</head>
+<body>
+<div id="canvas-container"></div>
+
+<!-- Top-Left Title HUD -->
+<div class="hud-header">
+  <div class="hud-kicker">Beyond Real Time · Gallery Two</div>
+  <div class="hud-title">25nm Microtubule Lattice &amp; Twisted-Light Core</div>
+  <div class="hud-sub">13-protofilament B-lattice α/β-tubulin shell coupled via analog phase slippage (γ ≈ 0.57721) to a coaxial optical lumen.</div>
+</div>
+
+<!-- Top-Right Live Telemetry -->
+<div class="telemetry">
+  <div class="tel-row"><span class="tel-label">Outer / Lumen Ø</span><span class="tel-val">25.0 nm / 15.0 nm</span></div>
+  <div class="tel-row"><span class="tel-label">Lattice Geometry</span><span class="tel-val">13-PF · 3-Start B-Seam</span></div>
+  <div class="tel-row"><span class="tel-label">Slippage Factor (γ)</span><span class="tel-val gold" id="tel-gamma">0.57721</span></div>
+  <div class="tel-row"><span class="tel-label">Core–Shell Coherence</span><span class="tel-val ok" id="tel-coh">99.2% (Resilient)</span></div>
+  <div class="tel-row"><span class="tel-label">Active 2-Bit Dipoles</span><span class="tel-val" id="tel-dipoles">0 / 260</span></div>
+</div>
+
+<!-- Bottom-Left Interactive Controls -->
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-header">
+      <span>Shell Cutaway (Inspect Lumen)</span>
+      <span id="val-cutaway">38%</span>
+    </div>
+    <input type="range" id="slider-cutaway" min="0" max="100" value="38">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-header">
+      <span>Analog Slippage Tolerance (γ)</span>
+      <span id="val-gamma">0.57721</span>
+    </div>
+    <input type="range" id="slider-gamma" min="0.00" max="1.00" step="0.00001" value="0.57721">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-header">
+      <span>Dipole / Optical Beat Frequency</span>
+      <span id="val-freq">1.00×</span>
+    </div>
+    <input type="range" id="slider-freq" min="0.1" max="2.5" step="0.05" value="1.0">
+  </div>
+
+  <div class="btn-row">
+    <button class="active" data-preset="cutaway">Cutaway Core</button>
+    <button data-preset="exterior">Exterior Lattice</button>
+    <button data-preset="cross">End-On 25/15nm</button>
+    <button data-preset="seam">B-Lattice Seam</button>
+    <button class="gold-btn" id="btn-reset-gamma">Reset γ = 0.57721</button>
+    <button id="btn-labels">Labels: ON</button>
+    <button id="btn-notes">Field Notes</button>
+  </div>
+</div>
+
+<!-- Bottom-Right Legend -->
+<div class="legend">
+  <div class="leg-item"><span class="swatch" style="background:#3b82f6"></span>α-Tubulin Subunit (4 nm)</div>
+  <div class="leg-item"><span class="swatch" style="background:#818cf8"></span>β-Tubulin Dipole (2-Bit State)</div>
+  <div class="leg-item"><span class="swatch" style="background:#f43f5e"></span>3-Start B-Lattice Seam</div>
+  <div class="leg-item"><span class="swatch" style="background:#4deeea"></span>Coaxial Twisted-Light Skeins</div>
+  <div class="leg-item"><span class="swatch" style="background:#f5b942"></span>Radial Least-Action Coupling</div>
+</div>
+
+<!-- 3D Projected Dimension Callouts -->
+<div class="callout" id="lbl-outer">Outer Wall: 25.0 nm (13 Protofilaments)</div>
+<div class="callout gold" id="lbl-lumen">Inner Lumen: 15.0 nm (Helical Light Core)</div>
+<div class="callout seam" id="lbl-seam">B-Lattice Seam (3-Start Helical Offset)</div>
+
+<!-- Field Notes Modal -->
+<div class="modal-backdrop" id="modal-notes">
+  <div class="modal-card">
+    <h2>Orch-OR, Least Action &amp; Analog Slippage (γ ≈ 0.57721)</h2>
+    <p><strong>1. The 25 nm Biological Waveguide:</strong> Eukaryotic microtubules assemble 13 parallel protofilaments of alternating α- and β-tubulin dimers into a hollow cylinder (25 nm outer diameter, 15 nm inner lumen) with a 3-start helical pitch and an A/B-lattice seam.</p>
+    <p><strong>2. Analog Core Inside a 2-Bit Digital Shell:</strong> Rather than acting as rigid zero-tolerance switches, β-tubulin hydrophobic pockets support collective dipole oscillations coupled to helical optical modes inside the 15 nm water-ordered lumen.</p>
+    <p><strong>3. Why Slippage Keeps Room-Temperature Coherence Alive:</strong> At 310 K, thermal agitation destroys brittle perfection. Operating near the Euler–Mascheroni slippage constant (<strong>γ ≈ 0.57721</strong>, "99% is good enough") absorbs phase jitter so the analog light braid and outer tubulin shell remain locked via least-action pathways.</p>
+    <p style="font-size:12px;color:#94a3b8;">Drag to orbit · Scroll to zoom · Right-drag to pan · Inspired by Penrose, Hameroff &amp; Beyond Real Time.</p>
+    <button class="modal-close" id="btn-close-notes">Close</button>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// --- Scene & Renderer ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x05080f, 0.011);
+
+const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(21, 12.0, 28);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 8;
+controls.maxDistance = 68;
+controls.target.set(0, -2.5, 0);
+
+// --- Lighting ---
+scene.add(new THREE.AmbientLight(0x334155, 1.35));
+const keyLight = new THREE.DirectionalLight(0xe0f2fe, 1.9);
+keyLight.position.set(18, 26, 22);
+scene.add(keyLight);
+
+const rimLight = new THREE.DirectionalLight(0x6366f1, 1.1);
+rimLight.position.set(-20, -14, -18);
+scene.add(rimLight);
+
+const lumenLight = new THREE.PointLight(0x4deeea, 3.4, 34, 1.35);
+lumenLight.position.set(0, 0, 0);
+scene.add(lumenLight);
+
+// --- Physical Dimensions (1 unit = 1 nm) ---
+const OUTER_RADIUS = 12.5;
+const LUMEN_RADIUS = 7.5;
+const SHELL_MID_R  = 10.0;
+const NUM_PF = 13;
+const DIMERS_PER_PF = 20;
+const DIMER_PITCH_Z = 1.6;
+const TUBE_LENGTH = DIMERS_PER_PF * DIMER_PITCH_Z;
+const CLOSED_CORE_SPAN_Z = TUBE_LENGTH + 15.0; // Taller/longer helical light core for the closed microtubule view
+const HELIX_RISE_PER_TURN = 3 * (DIMER_PITCH_Z * 0.5);
+
+const rootGroup = new THREE.Group();
+rootGroup.position.set(0, -2.1, 0);
+scene.add(rootGroup);
+
+function createMeasureRing(radius, color, opacity) {
+  const pts = [];
+  for (let i = 0; i <= 96; i++) {
+    const a = (i / 96) * Math.PI * 2;
+    pts.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, TUBE_LENGTH * 0.5 + 0.6));
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+  return new THREE.Line(geo, mat);
+}
+rootGroup.add(createMeasureRing(OUTER_RADIUS, 0x4deeea, 0.35));
+rootGroup.add(createMeasureRing(LUMEN_RADIUS, 0xf5b942, 0.45));
+
+// --- 13-Protofilament α/β-Tubulin Shell ---
+const tubulinNodes = [];
+const alphaGeo = new THREE.SphereGeometry(0.92, 18, 14);
+alphaGeo.scale(1.05, 1.05, 0.88);
+const betaGeo = new THREE.SphereGeometry(0.95, 18, 14);
+betaGeo.scale(1.08, 1.08, 0.90);
+
+const shellGroup = new THREE.Group();
+rootGroup.add(shellGroup);
+
+for (let pf = 0; pf < NUM_PF; pf++) {
+  const theta = (pf / NUM_PF) * Math.PI * 2;
+  const helicalOffsetZ = (pf / NUM_PF) * HELIX_RISE_PER_TURN;
+  const isSeamPF = (pf === 0 || pf === NUM_PF - 1);
+
+  for (let d = 0; d < DIMERS_PER_PF; d++) {
+    const baseZ = -TUBE_LENGTH * 0.5 + d * DIMER_PITCH_Z + helicalOffsetZ;
+
+    const alphaMat = new THREE.MeshStandardMaterial({
+      color: isSeamPF ? 0x9f1239 : 0x1d4ed8,
+      emissive: isSeamPF ? 0x4c0519 : 0x0f172a,
+      roughness: 0.36,
+      metalness: 0.22
+    });
+    const alphaMesh = new THREE.Mesh(alphaGeo, alphaMat);
+    alphaMesh.position.set(Math.cos(theta) * SHELL_MID_R, Math.sin(theta) * SHELL_MID_R, baseZ);
+    shellGroup.add(alphaMesh);
+
+    const betaMat = new THREE.MeshStandardMaterial({
+      color: isSeamPF ? 0xf43f5e : 0x6366f1,
+      emissive: isSeamPF ? 0x881337 : 0x1e1b4b,
+      emissiveIntensity: 0.45,
+      roughness: 0.28,
+      metalness: 0.28
+    });
+    const betaMesh = new THREE.Mesh(betaGeo, betaMat);
+    const betaZ = baseZ + DIMER_PITCH_Z * 0.48;
+    betaMesh.position.set(Math.cos(theta) * SHELL_MID_R, Math.sin(theta) * SHELL_MID_R, betaZ);
+    shellGroup.add(betaMesh);
+
+    const normAngle = ((theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+    tubulinNodes.push({
+      pf, d, theta, normAngle, isSeamPF,
+      alphaMesh, betaMesh, betaMat,
+      phaseSeed: pf * 0.73 + d * 0.41
+    });
+  }
+}
+
+// --- Coaxial Twisted-Light Core (Taller Axial Span for Closed Microtubule View) ---
+const coreGroup = new THREE.Group();
+rootGroup.add(coreGroup);
+
+const NUM_SKEINS = 6;
+for (let s = 0; s < NUM_SKEINS; s++) {
+  const pts = [];
+  const basePhase = (s / NUM_SKEINS) * Math.PI * 2;
+  const rSkein = 2.65 + (s % 2) * 1.7;
+  const turns = 4.75;
+  const steps = 210;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const z = (t - 0.5) * CLOSED_CORE_SPAN_Z;
+    const angle = basePhase + t * Math.PI * 2 * turns;
+    pts.push(new THREE.Vector3(Math.cos(angle) * rSkein, Math.sin(angle) * rSkein, z));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const tubeGeo = new THREE.TubeGeometry(curve, 200, s % 2 === 0 ? 0.23 : 0.17, 10, false);
+  const tubeMat = new THREE.MeshStandardMaterial({
+    color: s % 2 === 0 ? 0x4deeea : 0xf5b942,
+    emissive: s % 2 === 0 ? 0x0ea5e9 : 0xd97706,
+    emissiveIntensity: 1.4,
+    roughness: 0.15,
+    transparent: true,
+    opacity: 0.94
+  });
+  coreGroup.add(new THREE.Mesh(tubeGeo, tubeMat));
+}
+
+const spineGeo = new THREE.CylinderGeometry(0.46, 0.46, CLOSED_CORE_SPAN_Z + 1.5, 16);
+spineGeo.rotateX(Math.PI / 2);
+const spineMat = new THREE.MeshBasicMaterial({ color: 0xa5f3fc, transparent: true, opacity: 0.45 });
+coreGroup.add(new THREE.Mesh(spineGeo, spineMat));
+
+// --- Radial Least-Action Coupling Pulses ---
+const PULSE_COUNT = 68;
+const pulseGeo = new THREE.SphereGeometry(0.24, 10, 10);
+const pulses = [];
+for (let i = 0; i < PULSE_COUNT; i++) {
+  const mat = new THREE.MeshBasicMaterial({
+    color: i % 3 === 0 ? 0xf5b942 : 0x4deeea,
+    transparent: true,
+    opacity: 0.85
+  });
+  const mesh = new THREE.Mesh(pulseGeo, mat);
+  rootGroup.add(mesh);
+  pulses.push({
+    mesh,
+    theta: ((i * 5) % NUM_PF) / NUM_PF * Math.PI * 2,
+    z: ((i / PULSE_COUNT) - 0.5) * (CLOSED_CORE_SPAN_Z - 2.5),
+    offset: Math.random() * Math.PI * 2
+  });
+}
+
+// --- Interactive State & UI Wiring ---
+let cutawayPct = 38;
+let gammaVal = 0.57721;
+let beatFreq = 1.0;
+let showLabels = true;
+
+const sliderCutaway = document.getElementById('slider-cutaway');
+const sliderGamma   = document.getElementById('slider-gamma');
+const sliderFreq    = document.getElementById('slider-freq');
+
+const valCutaway = document.getElementById('val-cutaway');
+const valGamma   = document.getElementById('val-gamma');
+const valFreq    = document.getElementById('val-freq');
+const telGamma   = document.getElementById('tel-gamma');
+const telCoh     = document.getElementById('tel-coh');
+const telDipoles = document.getElementById('tel-dipoles');
+
+function updateCutawayVisibility() {
+  const centerAngle = Math.PI * 0.32;
+  const halfSpan = (cutawayPct / 100) * Math.PI;
+
+  for (const node of tubulinNodes) {
+    let diff = Math.abs(node.normAngle - centerAngle);
+    if (diff > Math.PI) diff = Math.PI * 2 - diff;
+    const hidden = cutawayPct > 0 && diff < halfSpan;
+    node.alphaMesh.visible = !hidden;
+    node.betaMesh.visible = !hidden;
+  }
+}
+
+sliderCutaway.addEventListener('input', (e) => {
+  cutawayPct = Number(e.target.value);
+  valCutaway.textContent = `${cutawayPct}%`;
+  updateCutawayVisibility();
+});
+
+sliderGamma.addEventListener('input', (e) => {
+  gammaVal = Number(e.target.value);
+  const formatted = gammaVal.toFixed(5);
+  valGamma.textContent = formatted;
+  telGamma.textContent = formatted;
+});
+
+sliderFreq.addEventListener('input', (e) => {
+  beatFreq = Number(e.target.value);
+  valFreq.textContent = `${beatFreq.toFixed(2)}×`;
+});
+
+document.getElementById('btn-reset-gamma').addEventListener('click', () => {
+  gammaVal = 0.57721;
+  sliderGamma.value = gammaVal;
+  valGamma.textContent = '0.57721';
+  telGamma.textContent = '0.57721';
+});
+
+document.getElementById('btn-labels').addEventListener('click', (e) => {
+  showLabels = !showLabels;
+  e.target.textContent = `Labels: ${showLabels ? 'ON' : 'OFF'}`;
+});
+
+const modalNotes = document.getElementById('modal-notes');
+document.getElementById('btn-notes').addEventListener('click', () => modalNotes.classList.add('open'));
+document.getElementById('btn-close-notes').addEventListener('click', () => modalNotes.classList.remove('open'));
+modalNotes.addEventListener('click', (e) => {
+  if (e.target === modalNotes) modalNotes.classList.remove('open');
+});
+
+let targetCamPos = null;
+let targetLookAt = new THREE.Vector3(0, -2.5, 0);
+
+const presets = {
+  cutaway:  { pos: new THREE.Vector3(21, 12.0, 28), look: new THREE.Vector3(0, -2.5, 0), cut: 38 },
+  exterior: { pos: new THREE.Vector3(25, 9.0, 27),  look: new THREE.Vector3(0, -2.5, 0), cut: 0  },
+  cross:    { pos: new THREE.Vector3(0.2, 0.5, 36), look: new THREE.Vector3(0, -2.2, 0), cut: 22 },
+  seam:     { pos: new THREE.Vector3(22, 1.2, 5),   look: new THREE.Vector3(10, -2.2, 0),cut: 0  }
+};
+
+document.querySelectorAll('button[data-preset]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('button[data-preset]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const p = presets[btn.dataset.preset];
+    targetCamPos = p.pos.clone();
+    targetLookAt = p.look.clone();
+    cutawayPct = p.cut;
+    sliderCutaway.value = cutawayPct;
+    valCutaway.textContent = `${cutawayPct}%`;
+    updateCutawayVisibility();
+  });
+});
+
+controls.addEventListener('start', () => { targetCamPos = null; });
+
+const lblOuter = document.getElementById('lbl-outer');
+const lblLumen = document.getElementById('lbl-lumen');
+const lblSeam  = document.getElementById('lbl-seam');
+
+const anchorOuter = new THREE.Vector3(0, OUTER_RADIUS + 0.8, TUBE_LENGTH * 0.5 + 0.6);
+const anchorLumen = new THREE.Vector3(0, -LUMEN_RADIUS * 0.55, 0);
+const anchorSeam  = new THREE.Vector3(OUTER_RADIUS + 0.5, 0, -2.5);
+
+function updateCallout(el, worldPos) {
+  if (!showLabels) {
+    el.style.opacity = '0';
+    return;
+  }
+  const v = worldPos.clone().applyMatrix4(rootGroup.matrixWorld).project(camera);
+  if (v.z > 1) {
+    el.style.opacity = '0';
+    return;
+  }
+  const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  el.style.opacity = '0.92';
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+updateCutawayVisibility();
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  if (targetCamPos) {
+    camera.position.lerp(targetCamPos, 0.065);
+    controls.target.lerp(targetLookAt, 0.065);
+    if (camera.position.distanceTo(targetCamPos) < 0.08) targetCamPos = null;
+  }
+
+  coreGroup.rotation.z = t * 0.85 * beatFreq;
+
+  const deltaGamma = Math.abs(gammaVal - 0.57721);
+  const coherence = Math.max(0.18, Math.exp(-deltaGamma * 4.2));
+  const jitterAmp = (1.0 - coherence) * 0.42;
+
+  const cohPct = (coherence * 100).toFixed(1);
+  if (coherence > 0.85) {
+    telCoh.textContent = `${cohPct}% (Phase-Locked)`;
+    telCoh.className = 'tel-val ok';
+  } else if (coherence > 0.52) {
+    telCoh.textContent = `${cohPct}% (Partial Slip)`;
+    telCoh.className = 'tel-val gold';
+  } else {
+    telCoh.textContent = `${cohPct}% (Thermal Decoherence)`;
+    telCoh.className = 'tel-val warn';
+  }
+
+  let activeCount = 0;
+  for (const node of tubulinNodes) {
+    const wave = Math.sin(t * 2.4 * beatFreq - node.d * 0.45 + node.pf * 0.35);
+    const noise = Math.sin(t * 17.0 + node.phaseSeed * 11.0) * jitterAmp;
+    const signal = wave * coherence + noise;
+
+    const rBreath = SHELL_MID_R + Math.sin(t * 1.6 * beatFreq + node.d * 0.3) * 0.14 + noise * 0.35;
+    node.alphaMesh.position.x = Math.cos(node.theta) * rBreath;
+    node.alphaMesh.position.y = Math.sin(node.theta) * rBreath;
+    node.betaMesh.position.x  = Math.cos(node.theta) * rBreath;
+    node.betaMesh.position.y  = Math.sin(node.theta) * rBreath;
+
+    const bitHigh = signal > 0.25;
+    if (bitHigh) activeCount++;
+
+    if (!node.isSeamPF) {
+      if (bitHigh) {
+        node.betaMat.color.setHex(0x38bdf8);
+        node.betaMat.emissive.setHex(0x0284c7);
+        node.betaMat.emissiveIntensity = 0.85;
+      } else {
+        node.betaMat.color.setHex(0x6366f1);
+        node.betaMat.emissive.setHex(0x1e1b4b);
+        node.betaMat.emissiveIntensity = 0.35;
+      }
+    }
+  }
+  telDipoles.textContent = `${activeCount} / ${tubulinNodes.length}`;
+
+  for (const p of pulses) {
+    const cycle = (t * 0.9 * beatFreq + p.offset) % 1;
+    const r = 3.2 + cycle * (SHELL_MID_R - 3.2);
+    const swirl = p.theta + Math.sin(t * 1.5 + p.offset) * 0.12;
+    p.mesh.position.set(Math.cos(swirl) * r, Math.sin(swirl) * r, p.z);
+    p.mesh.scale.setScalar((0.5 + 0.7 * Math.sin(cycle * Math.PI)) * (0.45 + 0.65 * coherence));
+  }
+
+  controls.update();
+  updateCallout(lblOuter, anchorOuter);
+  updateCallout(lblLumen, anchorLumen);
+  updateCallout(lblSeam, anchorSeam);
+
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
