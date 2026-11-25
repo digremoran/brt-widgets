@@ -1,87 +1,254 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.7">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Helvetica Neue'; color: #dbe2ec; -webkit-text-stroke: #dbe2ec; min-height: 15.0px}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.5px 'Helvetica Neue'; color: #35e5da; -webkit-text-stroke: #35e5da; background-color: #f1ac34; min-height: 11.0px}
-    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.5px 'Helvetica Neue'; color: #35e5da; -webkit-text-stroke: #35e5da}
-    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 15.5px 'Helvetica Neue'; color: #f6f9fb; -webkit-text-stroke: #f6f9fb}
-    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.5px 'Helvetica Neue'; color: #8291a9; -webkit-text-stroke: #8291a9}
-    p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.0px 'Helvetica Neue'; color: #8291a9; -webkit-text-stroke: #8291a9}
-    p.p7 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.0px '.SF NS Mono'; color: #9571f8; -webkit-text-stroke: #9571f8}
-    p.p8 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.0px '.SF NS Mono'; color: #f1ac34; -webkit-text-stroke: #f1ac34}
-    p.p9 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.0px '.SF NS Mono'; color: #31cd87; -webkit-text-stroke: #31cd87}
-    p.p10 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.0px '.SF NS Mono'; color: #35e5da; -webkit-text-stroke: #35e5da}
-    p.p11 {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.0px '.SF NS'; color: #dbe2ec; -webkit-text-stroke: #dbe2ec}
-    p.p12 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.5px '.SF NS Mono'; color: #35e5da; -webkit-text-stroke: #35e5da}
-    p.p13 {margin: 0.0px 0.0px 0.0px 0.0px; font: 9.0px '.AppleSystemUIFontMonospaced'; color: #8291a9; -webkit-text-stroke: #8291a9}
-    p.p14 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 10.5px '.SF NS'; color: #dbe2ec; -webkit-text-stroke: #dbe2ec; background-color: #0d121f; background-color: rgba(13, 18, 31, 0.9)}
-    p.p15 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 10.5px '.SF NS'; color: #ffffff; -webkit-text-stroke: #ffffff; background-color: #35e5da; background-color: rgba(53, 229, 218, 0.22)}
-    p.p16 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 10.5px '.SF NS'; color: #f1ac34; -webkit-text-stroke: #f1ac34; background-color: #0d121f; background-color: rgba(13, 18, 31, 0.9)}
-    p.p17 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.5px 'Helvetica Neue'; color: #8291a9; -webkit-text-stroke: #8291a9; background-color: #31aef6; min-height: 12.0px}
-    p.p18 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.5px 'Helvetica Neue'; color: #8291a9; -webkit-text-stroke: #8291a9; background-color: #090c14; background-color: rgba(9, 12, 20, 0.9)}
-    p.p19 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.5px 'Helvetica Neue'; color: #8291a9; -webkit-text-stroke: #8291a9; background-color: #f1ac34; min-height: 12.0px}
-    p.p20 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.5px 'Helvetica Neue'; color: #8291a9; -webkit-text-stroke: #8291a9; background-color: #35e5da; min-height: 12.0px}
-    p.p21 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.5px 'Helvetica Neue'; color: #8291a9; -webkit-text-stroke: #8291a9; background-color: #9571f8; min-height: 12.0px}
-    p.p22 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px '.AppleSystemUIFontMonospaced'; color: #35e5da; -webkit-text-stroke: #35e5da; background-color: #06090f; background-color: rgba(6, 9, 15, 0.86)}
-    p.p23 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px '.AppleSystemUIFontMonospaced'; color: #f1ac34; -webkit-text-stroke: #f1ac34; background-color: #06090f; background-color: rgba(6, 9, 15, 0.86)}
-    p.p24 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px '.AppleSystemUIFontMonospaced'; color: #9571f8; -webkit-text-stroke: #9571f8; background-color: #06090f; background-color: rgba(6, 9, 15, 0.86)}
-    p.p25 {margin: 0.0px 0.0px 0.0px 0.0px; font: 10.0px '.AppleSystemUIFontMonospaced'; color: #9571f8; -webkit-text-stroke: #9571f8; background-color: #06090f; background-color: rgba(6, 9, 15, 0.86); min-height: 12.0px}
-    p.p26 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; -webkit-text-stroke: #000000}
-    span.s1 {font-kerning: none}
-    span.s2 {font-kerning: none; background-color: rgba(9, 12, 20, 0.9)}
-    span.s3 {font: 11.0px '.AppleSystemUIFontMonospaced'; font-kerning: none; background-color: rgba(9, 12, 20, 0.9)}
-    span.s4 {font: 10.5px '.AppleSystemUIFontMonospaced'; font-kerning: none; background-color: rgba(9, 12, 20, 0.9)}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orch-OR to Kerr ER=EPR · Scale Invariance</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 45%, #0d1b33 0%, #04070f 85%);
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    user-select: none;
+  }
+  #c {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+  }
+  #c:active { cursor: grabbing; }
+  .box {
+    position: fixed;
+    z-index: 10;
+    background: rgba(8, 14, 26, 0.88);
+    border: 1px solid rgba(77, 238, 234, 0.28);
+    border-radius: 10px;
+    padding: 10px 13px;
+    backdrop-filter: blur(8px);
+  }
+  .tl { top: 12px; left: 14px; width: 360px; max-width: calc(100% - 28px); }
+  .tr { top: 12px; right: 14px; width: 245px; font-size: 11px; }
+  .bl { bottom: 10px; left: 14px; width: 340px; max-width: calc(100% - 28px); }
+  .kicker { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #38e8e1; font-weight: 700; margin-bottom: 3px; }
+  h1 { font-size: 15px; line-height: 1.25; color: #f8fafc; }
+  p.sub { font-size: 11px; color: #94a3b8; margin-top: 4px; line-height: 1.35; }
+  .row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .row:last-child { border-bottom: none; }
+  .lbl { color: #94a3b8; }
+  .val { font-family: monospace; font-weight: 700; color: #38e8e1; }
+  .gold { color: #f5b942; }
+  .violet { color: #a78bfa; }
+  .ctrl { margin-bottom: 7px; }
+  .ctrl-top { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; }
+  input[type="range"] { width: 100%; accent-color: #38e8e1; cursor: pointer; }
+  .btns { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+  button {
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid rgba(148,163,184,0.3);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.active { background: rgba(56,232,225,0.22); border-color: #38e8e1; color: #fff; }
+  @media (max-width: 720px) { .tr { display: none; } }
+</style>
 </head>
 <body>
-<p class="p1"><span class="s1"></span><br></p>
-<p class="p2"><span class="s1"><b></b></span><br></p>
-<p class="p3"><span class="s2"><b>BEYOND REAL TIME · GALLERY THREE · SCALE INVARIANCE</b><b></b></span></p>
-<p class="p4"><span class="s2"><b>Orch-OR Lattice ↔ Kerr Spinning ER=EPR Throat</b><b></b></span></p>
-<p class="p5"><span class="s2">From a 25 nm biological waveguide to a rotating Einstein–Rosen bridge: twist, path-integral recycling, and γ ≈ 0.57721 lock geometry across scales.</span></p>
-<p class="p6"><span class="s2">Scale Regime</span></p>
-<p class="p7"><span class="s3"><b>Hybrid Bridge (50%)</b><b></b></span></p>
-<p class="p6"><span class="s2">Kerr Spin (a / M)</span></p>
-<p class="p8"><span class="s3"><b>0.94 c</b><b></b></span></p>
-<p class="p6"><span class="s2">Slippage Lock (γ)</span></p>
-<p class="p8"><span class="s3"><b>0.57721</b><b></b></span></p>
-<p class="p6"><span class="s2">Throat / Lattice Sync</span></p>
-<p class="p9"><span class="s3"><b>98.8% (Traversable)</b><b></b></span></p>
-<p class="p6"><span class="s2">Topology</span></p>
-<p class="p10"><span class="s3"><b>13-PF ↔ Ring Throat</b><b></b></span></p>
-<p class="p11"><span class="s2">Scale Morph (25 nm Lattice → ER=EPR Throat)</span></p>
-<p class="p12"><span class="s4"><b>50%</b><b></b></span></p>
-<p class="p13"><span class="s2">25 nm Tubulin</span></p>
-<p class="p13"><span class="s2">Scale Bridge</span></p>
-<p class="p13"><span class="s2">Kerr Wormhole</span></p>
-<p class="p11"><span class="s2">Kerr Angular Momentum / Helical Twist (a/M)</span></p>
-<p class="p12"><span class="s4"><b>0.94</b><b></b></span></p>
-<p class="p11"><span class="s2">Euler–Mascheroni Phase Cushion (γ)</span></p>
-<p class="p12"><span class="s4"><b>0.57721</b><b></b></span></p>
-<p class="p14"><span class="s1"><b>25 nm Lattice</b></span></p>
-<p class="p15"><span class="s1"><b>Scale Bridge</b></span></p>
-<p class="p14"><span class="s1"><b>Kerr ER=EPR</b></span></p>
-<p class="p14"><span class="s1"><b>End-On Throat</b></span></p>
-<p class="p16"><span class="s1"><b>Lock γ = 0.57721</b></span></p>
-<p class="p14"><span class="s1"><b>Labels: ON</b></span></p>
-<p class="p17"><span class="s1"></span><br></p>
-<p class="p18"><span class="s1">α/β-Tubulin Shell ↔ Throat Mesh</span></p>
-<p class="p19"><span class="s1"></span><br></p>
-<p class="p18"><span class="s1">Kerr Ring Singularity / Waist (r = 0)</span></p>
-<p class="p20"><span class="s1"></span><br></p>
-<p class="p18"><span class="s1">Frame-Dragged Twisted-Light Skeins</span></p>
-<p class="p21"><span class="s1"></span><br></p>
-<p class="p18"><span class="s1">Non-Local ER=EPR Path Recycling</span></p>
-<p class="p22"><span class="s1">Region I · Local 25 nm / Upper Mouth</span></p>
-<p class="p23"><span class="s1">Kerr Ring Waist (r = 0) · Angular Twist</span></p>
-<p class="p24"><span class="s1">Region II · Conjugate ER=EPR Mouth</span></p>
-<p class="p25"><span class="s1"></span><br></p>
-<p class="p26"><span class="s1">&lt;div style="background: rgb(4, 7, 15); border-radius: 10px; border: 1px solid rgba(77, 238, 234, 0.35); box-shadow: rgba(0, 0, 0, 0.45) 0px 12px 32px; margin: 22px auto; max-width: 980px; overflow: hidden;"&gt; &lt;iframe allow="fullscreen" allowfullscreen="" loading="lazy" src="https://digremoran.github.io/brt-widgets/gemini-code-1795631179822.html" style="border: 0; display: block; height: 780px; width: 100%;" title="Orch-OR Lattice to Kerr Spinning ER=EPR Throat — Gallery Three"&gt; &lt;/iframe&gt; &lt;div style="align-items: center; background: rgb(10, 16, 28); color: #94a3b8; display: flex; flex-wrap: wrap; font-size: 12px; gap: 8px; justify-content: space-between; padding: 8px 14px;"&gt; &lt;span&gt;Gallery Three · Drag to orbit · Scroll to zoom · Scrub Scale Morph (25 nm → Kerr ER=EPR) &amp;amp; Slippage (γ ≈ 0.57721)&lt;/span&gt; &lt;a href="https://digremoran.github.io/brt-widgets/gemini-code-1795631179822.html" rel="noopener noreferrer" style="color: #38e8e1; font-weight: 600; text-decoration: none;" target="_blank"&gt;Open Fullscreen ↗&lt;/a&gt; &lt;/div&gt; &lt;/div&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;</span></p>
+<canvas id="c"></canvas>
+
+<div class="box tl">
+  <div class="kicker">Beyond Real Time · Gallery Three · Scale Invariance</div>
+  <h1>Orch-OR Lattice ↔ Kerr Spinning ER=EPR Throat</h1>
+  <p class="sub">25 nm 13-protofilament waveguide morphing into a rotating Einstein–Rosen bridge with γ ≈ 0.57721 phase lock.</p>
+</div>
+
+<div class="box tr">
+  <div class="row"><span class="lbl">Scale Regime</span><span class="val violet" id="t-reg">Hybrid Bridge (50%)</span></div>
+  <div class="row"><span class="lbl">Kerr Spin (a/M)</span><span class="val gold" id="t-spin">0.94 c</span></div>
+  <div class="row"><span class="lbl">Slippage (γ)</span><span class="val gold" id="t-gam">0.57721</span></div>
+  <div class="row"><span class="lbl">Bridge Lock</span><span class="val" id="t-lock">98.8%</span></div>
+</div>
+
+<div class="box bl">
+  <div class="ctrl">
+    <div class="ctrl-top"><span>Scale Morph (25 nm → ER=EPR)</span><span class="val" id="v-morph">50%</span></div>
+    <input type="range" id="r-morph" min="0" max="100" value="50">
+  </div>
+  <div class="ctrl">
+    <div class="ctrl-top"><span>Kerr Spin / Twist (a/M)</span><span class="val" id="v-spin">0.94</span></div>
+    <input type="range" id="r-spin" min="0" max="0.99" step="0.01" value="0.94">
+  </div>
+  <div class="ctrl">
+    <div class="ctrl-top"><span>Slippage Cushion (γ)</span><span class="val" id="v-gam">0.57721</span></div>
+    <input type="range" id="r-gam" min="0" max="1" step="0.00001" value="0.57721">
+  </div>
+  <div class="btns">
+    <button data-m="0">25 nm Lattice</button>
+    <button class="active" data-m="50">Scale Bridge</button>
+    <button data-m="100">Kerr ER=EPR</button>
+    <button id="b-gam">Lock γ = 0.57721</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d');
+  var morph = 50, spin = 0.94, gamma = 0.57721;
+  var yaw = 0.58, pitch = 0.34, zoom = 1.0;
+
+  var rMorph = document.getElementById('r-morph');
+  var rSpin = document.getElementById('r-spin');
+  var rGam = document.getElementById('r-gam');
+
+  function syncUI() {
+    document.getElementById('v-morph').textContent = morph + '%';
+    document.getElementById('v-spin').textContent = spin.toFixed(2);
+    document.getElementById('v-gam').textContent = gamma.toFixed(5);
+    document.getElementById('t-spin').textContent = spin.toFixed(2) + ' c';
+    document.getElementById('t-gam').textContent = gamma.toFixed(5);
+    var reg = document.getElementById('t-reg');
+    if (morph < 25) reg.textContent = '25 nm Bio-Lattice';
+    else if (morph < 75) reg.textContent = 'Hybrid Bridge (' + morph + '%)';
+    else reg.textContent = 'Kerr ER=EPR Throat';
+  }
+
+  rMorph.addEventListener('input', function (e) { morph = +e.target.value; syncUI(); });
+  rSpin.addEventListener('input', function (e) { spin = +e.target.value; syncUI(); });
+  rGam.addEventListener('input', function (e) { gamma = +e.target.value; syncUI(); });
+
+  document.getElementById('b-gam').addEventListener('click', function () {
+    gamma = 0.57721;
+    rGam.value = gamma;
+    syncUI();
+  });
+
+  var mBtns = document.querySelectorAll('button[data-m]');
+  mBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      mBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      morph = +btn.getAttribute('data-m');
+      rMorph.value = morph;
+      syncUI();
+    });
+  });
+
+  var drag = false, px = 0, py = 0;
+  canvas.addEventListener('pointerdown', function (e) { drag = true; px = e.clientX; py = e.clientY; });
+  window.addEventListener('pointerup', function () { drag = false; });
+  window.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    yaw += (e.clientX - px) * 0.008;
+    pitch = Math.max(-1.2, Math.min(1.2, pitch + (e.clientY - py) * 0.008));
+    px = e.clientX; py = e.clientY;
+  });
+  canvas.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    zoom = Math.max(0.55, Math.min(1.8, zoom + e.deltaY * 0.0008));
+  }, { passive: false });
+
+  function fit() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = canvas.clientWidth || window.innerWidth || 900;
+    var h = canvas.clientHeight || window.innerHeight || 720;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  syncUI();
+
+  function proj(x, y, z, cx, cy, sc) {
+    var cY = Math.cos(yaw), sY = Math.sin(yaw);
+    var cP = Math.cos(pitch), sP = Math.sin(pitch);
+    var x1 = x * cY - z * sY;
+    var z1 = x * sY + z * cY;
+    var y2 = y * cP - z1 * sP;
+    var z2 = y * sP + z1 * cP;
+    var p = 640 / (640 + z2 * sc * 0.65);
+    return { sx: cx + x1 * sc * p, sy: cy + y2 * sc * p, p: p };
+  }
+
+  var t0 = performance.now();
+  function draw(now) {
+    requestAnimationFrame(draw);
+    var t = (now - t0) * 0.001;
+    var w = canvas.clientWidth || window.innerWidth || 900;
+    var h = canvas.clientHeight || window.innerHeight || 720;
+    ctx.clearRect(0, 0, w, h);
+
+    var m = morph / 100;
+    var lock = Math.max(0.2, Math.exp(-Math.abs(gamma - 0.57721) * 3.8));
+    document.getElementById('t-lock').textContent = (lock * 100).toFixed(1) + '%';
+
+    var cx = w * 0.52, cy = h * 0.47;
+    var sc = Math.min(w, h) * 0.28 / zoom;
+    var span = 1.45;
+    var twist = 0.5 + spin * 1.8;
+
+    // Helical light skeins
+    for (var s = 0; s < 4; s++) {
+      ctx.beginPath();
+      for (var k = 0; k <= 50; k++) {
+        var u = (k / 50) * 2 - 1;
+        var ang = (s / 4) * Math.PI * 2 + u * (2.5 + spin * 3.5) + t * twist;
+        var rc = 0.28 + 0.14 * Math.sin(u * Math.PI * 2);
+        var pt = proj(Math.cos(ang) * rc, Math.sin(ang) * rc, u * span, cx, cy, sc);
+        if (k === 0) ctx.moveTo(pt.sx, pt.sy); else ctx.lineTo(pt.sx, pt.sy);
+      }
+      ctx.strokeStyle = s % 2 === 0 ? '#38e8e1' : '#f5b942';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+    }
+
+    // 13-protofilament / Kerr throat nodes
+    var pts = [];
+    for (var pf = 0; pf < 13; pf++) {
+      var bt = (pf / 13) * Math.PI * 2;
+      for (var r = 0; r < 20; r++) {
+        var ur = (r / 19) * 2 - 1;
+        var rad = 0.85 * (1 - m) + (0.42 + spin * 0.12 + Math.pow(Math.abs(ur), 1.8) * 1.15) * m;
+        var dragAng = m * spin * (1 - Math.abs(ur)) * 0.9 * Math.sin(t * 1.3 + ur * 2);
+        var th = bt + dragAng + t * 0.15 * spin;
+        var pr = proj(Math.cos(th) * rad, Math.sin(th) * rad, ur * span, cx, cy, sc);
+        pts.push({ sx: pr.sx, sy: pr.sy, p: pr.p, a: r % 2 === 0 });
+      }
+    }
+    pts.sort(function (a, b) { return a.p - b.p; });
+    for (var i = 0; i < pts.length; i++) {
+      var it = pts[i];
+      ctx.beginPath();
+      ctx.arc(it.sx, it.sy, Math.max(2.5, 5.5 * it.p), 0, Math.PI * 2);
+      ctx.fillStyle = m < 0.5 ? (it.a ? '#38bdf8' : '#34d399') : (it.a ? '#38e8e1' : '#a78bfa');
+      ctx.fill();
+    }
+
+    // Kerr waist ring
+    ctx.beginPath();
+    for (var ws = 0; ws <= 48; ws++) {
+      var wa = (ws / 48) * Math.PI * 2 + t * twist;
+      var wr = 0.42 + spin * 0.12;
+      var wp = proj(Math.cos(wa) * wr, Math.sin(wa) * wr, 0, cx, cy, sc);
+      if (ws === 0) ctx.moveTo(wp.sx, wp.sy); else ctx.lineTo(wp.sx, wp.sy);
+    }
+    ctx.strokeStyle = '#f5b942';
+    ctx.lineWidth = 2.8;
+    ctx.stroke();
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
 </body>
 </html>
