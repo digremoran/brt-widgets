@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orch-OR 25nm Microtubule Lattice &amp; Helical Light Core | Beyond Real Time</title>
+  <!-- Typography: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Three.js & OrbitControls via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    :root {
+      --bg-void: #050811;
+      --panel-bg: rgba(9, 14, 28, 0.82);
+      --panel-border: rgba(56, 189, 248, 0.24);
+      --accent-cyan: #38bdf8;
+      --accent-gold: #fbbf24;
+      --accent-emerald: #34d399;
+      --accent-rose: #fb7185;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    /* Header & Telemetry Bar */
+    .hud-header {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .title-card {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 12px 16px;
+      max-width: 470px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    }
+
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .eyebrow-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      box-shadow: 0 0 8px var(--accent-gold);
+    }
+
+    .title-card h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      line-height: 1.25;
+    }
+
+    .title-card p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      line-height: 1.42;
+    }
+
+    /* Live Telemetry Strip */
+    .telemetry-panel {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(96px, 1fr));
+      gap: 10px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    }
+
+    .metric-box {
+      display: flex;
+      flex-direction: column;
+      border-left: 2px solid rgba(56, 189, 248, 0.38);
+      padding-left: 8px;
+    }
+
+    .metric-box.gold {
+      border-left-color: rgba(251, 191, 36, 0.6);
+    }
+
+    .metric-box.emerald {
+      border-left-color: rgba(52, 211, 153, 0.6);
+    }
+
+    .metric-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 2px;
+    }
+
+    .metric-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    /* Camera Presets Bar */
+    .camera-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 14px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    }
+
+    .preset-btn {
+      background: rgba(30, 41, 59, 0.65);
+      color: var(--text-secondary);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 9px;
+      padding: 7px 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-btn:hover {
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--text-primary);
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+
+    .preset-btn.active {
+      background: rgba(56, 189, 248, 0.24);
+      color: #e0f2fe;
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
+    }
+
+    /* Right Control Drawer */
+    .controls-drawer {
+      position: fixed;
+      top: 102px;
+      right: 14px;
+      width: 304px;
+      max-height: calc(100vh - 172px);
+      overflow-y: auto;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+
+    .controls-drawer.collapsed {
+      transform: translateX(calc(100% + 24px));
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .drawer-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+    }
+
+    .control-group {
+      margin-bottom: 13px;
+    }
+
+    .control-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      margin-bottom: 5px;
+    }
+
+    .control-label-row span:first-child {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .control-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent-gold);
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    input[type="range"].gold-slider::-webkit-slider-thumb {
+      background: var(--accent-gold);
+      box-shadow: 0 0 8px rgba(251, 191, 36, 0.7);
+    }
+
+    .gamma-marker {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .gamma-reset {
+      color: var(--accent-gold);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* Toggle Chips */
+    .toggles-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .toggle-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 9px;
+      padding: 7px 9px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-chip.active {
+      border-color: rgba(52, 211, 153, 0.55);
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--text-primary);
+    }
+
+    .toggle-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #475569;
+      flex-shrink: 0;
+    }
+
+    .toggle-chip.active .toggle-indicator {
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    /* Legend */
+    .legend-box {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.15);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 10.5px;
+      color: var(--text-secondary);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 9px;
+      height: 9px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* Bottom-Right Utility Cluster */
+    .utility-cluster {
+      position: fixed;
+      bottom: 16px;
+      right: 14px;
+      z-index: 11;
+      display: flex;
+      gap: 8px;
+    }
+
+    .util-btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--text-primary);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 9px 13px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+      transition: all 0.2s ease;
+    }
+
+    .util-btn:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    /* Field Notes Modal */
+    .info-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgba(3, 6, 14, 0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .info-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .info-card {
+      background: #0a1020;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 16px;
+      max-width: 640px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 22px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.82);
+    }
+
+    .info-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .info-card .subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent-gold);
+      margin-bottom: 14px;
+    }
+
+    .info-card p {
+      font-size: 13px;
+      line-height: 1.62;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .info-cell {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .info-cell h4 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent-cyan);
+      margin-bottom: 4px;
+    }
+
+    .info-cell p {
+      font-size: 11.5px;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .close-modal-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Projected 3D Dimension Callouts */
+    .callout-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .dim-tag {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: rgba(6, 9, 19, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.48);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #e0f2fe;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      transition: opacity 0.2s ease;
+    }
+
+    .dim-tag.gold {
+      border-color: rgba(251, 191, 36, 0.58);
+      color: #fef3c7;
+    }
+
+    /* Responsive Layout */
+    @media (max-width: 920px) {
+      .telemetry-panel {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .controls-drawer {
+        top: auto;
+        bottom: 64px;
+        right: 14px;
+        width: calc(100% - 28px);
+        max-width: 340px;
+        max-height: 52vh;
+      }
+      .camera-bar {
+        max-width: calc(100% - 175px);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .title-card p {
+        display: none;
+      }
+      .telemetry-panel {
+        width: 100%;
+      }
+      .camera-bar {
+        bottom: 58px;
+        max-width: calc(100% - 28px);
+      }
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Main 3D WebGL Viewport -->
+  <div id="canvas-container"></div>
+
+  <!-- Screen-Projected 3D Dimension Callouts -->
+  <div class="callout-layer" id="callout-layer">
+    <div class="dim-tag" id="tag-od">25.0 nm Outer Diameter (13 Protofilaments)</div>
+    <div class="dim-tag gold" id="tag-id">15.0 nm Inner Lumen Waveguide</div>
+    <div class="dim-tag" id="tag-dimer">8.0 nm α/β-Tubulin Dimer (2-Bit Shell)</div>
+    <div class="dim-tag gold" id="tag-seam">3-Start B-Lattice Helical Seam</div>
+  </div>
+
+  <!-- Top Header & Live Biophysical Telemetry -->
+  <header class="hud-header">
+    <div class="title-card">
+      <div class="eyebrow">
+        <span class="eyebrow-dot"></span>
+        <span>Beyond Real Time · Gallery Two · Orch-OR &amp; Least Action</span>
+      </div>
+      <h1>25nm Microtubule Lattice &amp; Helical Light Core</h1>
+      <p>13-protofilament α/β-tubulin B-lattice shell with a 15 nm coaxial twisted-light core and Euler–Mascheroni phase slippage (γ ≈ 0.57721).</p>
+    </div>
+
+    <div class="telemetry-panel" aria-label="Live Biophysical Telemetry">
+      <div class="metric-box emerald">
+        <span class="metric-label">Coherent Phase</span>
+        <span class="metric-value" id="val-coherence">99.2%</span>
+        <span class="metric-sub" id="sub-coherence">γ-Locked (Optimal)</span>
+      </div>
+      <div class="metric-box gold">
+        <span class="metric-label">Slippage Ratio (γ)</span>
+        <span class="metric-value" id="val-gamma">0.57721</span>
+        <span class="metric-sub" id="sub-slippage">99% Cushion Active</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Coupling State</span>
+        <span class="metric-value" id="val-coupling">RESONANT</span>
+        <span class="metric-sub" id="sub-dimers">260/260 Dimers</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Oscillation Rate</span>
+        <span class="metric-value" id="val-freq">40.0 Hz</span>
+        <span class="metric-sub">Least-Action Beat</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Right Control Drawer -->
+  <aside class="controls-drawer" id="controls-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title">Lattice &amp; Core Controls</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted);">GALLERY II</span>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label-row">
+        <span>Shell Cutaway / Peel</span>
+        <span class="control-val" id="lbl-cutaway">38%</span>
+      </div>
+      <input type="range" id="slider-cutaway" min="0" max="100" step="1" value="38" />
+    </div>
+
+    <div class="control-group">
+      <div class="control-label-row">
+        <span>Slippage Tolerance (γ)</span>
+        <span class="control-val" id="lbl-gamma">0.57721</span>
+      </div>
+      <input type="range" class="gold-slider" id="slider-gamma" min="0.00" max="1.00" step="0.00001" value="0.57721" />
+      <div class="gamma-marker">
+        <span>0.00 (Brittle)</span>
+        <span class="gamma-reset" id="btn-reset-gamma" title="Snap to Euler–Mascheroni Constant (0.57721)">γ = 0.57721</span>
+        <span>1.00 (Drift)</span>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label-row">
+        <span>Dipole Oscillation / Coherence</span>
+        <span class="control-val" id="lbl-osc">1.00×</span>
+      </div>
+      <input type="range" id="slider-osc" min="0.1" max="3.0" step="0.05" value="1.0" />
+    </div>
+
+    <div class="control-group">
+      <div class="control-label-row">
+        <span>Radial Lumen Coupling</span>
+        <span class="control-val" id="lbl-coupling">85%</span>
+      </div>
+      <input type="range" class="gold-slider" id="slider-coupling" min="0" max="100" step="1" value="85" />
+    </div>
+
+    <div class="toggles-grid">
+      <button type="button" class="toggle-chip active" id="tog-dipoles">
+        <span>2-Bit Dipoles</span>
+        <span class="toggle-indicator"></span>
+      </button>
+      <button type="button" class="toggle-chip active" id="tog-radial">
+        <span>Radial Pulses</span>
+        <span class="toggle-indicator"></span>
+      </button>
+      <button type="button" class="toggle-chip active" id="tog-callouts">
+        <span>3D Callouts</span>
+        <span class="toggle-indicator"></span>
+      </button>
+      <button type="button" class="toggle-chip active" id="tog-play">
+        <span id="play-text">Running</span>
+        <span class="toggle-indicator"></span>
+      </button>
+    </div>
+
+    <div class="legend-box">
+      <div class="legend-item">
+        <span class="swatch" style="background: #2563eb;"></span>
+        <span>α-Tubulin Subunit</span>
+      </div>
+      <div class="legend-item">
+        <span class="swatch" style="background: #0d9488;"></span>
+        <span>β-Tubulin Subunit</span>
+      </div>
+      <div class="legend-item">
+        <span class="swatch" style="background: #fbbf24;"></span>
+        <span>Dipole / Gold Skein</span>
+      </div>
+      <div class="legend-item">
+        <span class="swatch" style="background: #38bdf8;"></span>
+        <span>Cyan Twisted-Light</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Camera Presets Bar -->
+  <nav class="camera-bar" aria-label="Camera Presets">
+    <button type="button" class="preset-btn active" data-preset="cutaway">Cutaway Lumen Core</button>
+    <button type="button" class="preset-btn" data-preset="exterior">Exterior Lattice</button>
+    <button type="button" class="preset-btn" data-preset="cross">Cross-Section (25nm/15nm)</button>
+    <button type="button" class="preset-btn" data-preset="seam">B-Lattice Seam</button>
+  </nav>
+
+  <!-- Bottom-Right Utility Cluster -->
+  <div class="utility-cluster">
+    <button type="button" class="util-btn" id="btn-toggle-drawer">Controls</button>
+    <button type="button" class="util-btn" id="btn-open-info">Field Notes</button>
+  </div>
+
+  <!-- Field Notes Modal -->
+  <div class="info-modal" id="info-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="info-card">
+      <h2 id="modal-title">Orch-OR, Least Action &amp; Analog Slippage in the 25nm Microtubule</h2>
+      <div class="subtitle">BEYOND REAL TIME · GALLERY TWO · STRUCTURAL BIOPHYSICS</div>
+      <p>
+        Nature repeatedly selects cylindrical and helical architectures because they minimize action while confining energy and phase structure. A neuronal microtubule forms a hollow <strong>25.0 nm outer cylinder</strong> around a <strong>15.0 nm inner lumen</strong>, built from 13 protofilaments of alternating <strong>α- and β-tubulin dimers</strong> (8.0 nm repeat) along a 3-start B-lattice helix with a longitudinal seam.
+      </p>
+      <p>
+        In the <strong>Penrose–Hameroff Orch-OR</strong> and <strong>Universal Modeler</strong> perspective, the tubulin wall acts as a discrete <strong>2-bit dipole lattice</strong> while the 15.0 nm core carries a continuous <strong>twisted-light (helical/OAM) wave</strong>. Rather than relying on brittle zero-slip lockstep at room temperature, a phase-slip cushion around <strong>γ ≈ 0.57721</strong> ("99% is good enough") absorbs thermal jostling while preserving coherent coupling across scales.
+      </p>
+      <div class="info-grid">
+        <div class="info-cell">
+          <h4>1. Least-Action Geometry</h4>
+          <p>Cylindrical confinement and helical phase braids let energy and information propagate with minimal dissipation along natural boundary symmetries.</p>
+        </div>
+        <div class="info-cell">
+          <h4>2. 2-Bit Shell + Analog Core</h4>
+          <p>Discrete α/β dipole transitions on the 25 nm wall couple radially to intertwined cyan and gold optical skeins inside the 15 nm lumen.</p>
+        </div>
+        <div class="info-cell">
+          <h4>3. Slippage Cushion (γ ≈ 0.57721)</h4>
+          <p>Too little slippage makes structure brittle under thermal noise; too much causes phase drift. Near γ = 0.57721, resilience peaks.</p>
+        </div>
+        <div class="info-cell">
+          <h4>4. B-Lattice Seam &amp; Inspection</h4>
+          <p>Drag to orbit, scroll/pinch to zoom, peel the shell from 0% to 100%, or snap to the Seam and Cross-Section presets.</p>
+        </div>
+      </div>
+      <button type="button" class="close-modal-btn" id="btn-close-info">Return to 3D Lattice</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // --- Geometric & Physical Scale (1 unit = 1 nanometer) ---
+      const OUTER_DIAMETER = 25.0;      // 25.0 nm outer diameter
+      const INNER_DIAMETER = 15.0;      // 15.0 nm inner lumen diameter
+      const OUTER_RADIUS = OUTER_DIAMETER * 0.5;   // 12.5 nm
+      const INNER_RADIUS = INNER_DIAMETER * 0.5;   // 7.5 nm
+      const WALL_MID_RADIUS = 10.0;     // Centerline of tubulin monomers
+      const MONOMER_RADIUS = 2.02;      // ~4.0 nm monomer radius scale
+      const NUM_PROTOFILAMENTS = 13;    // 13 protofilaments
+      const NUM_RINGS = 20;             // Axial dimer rings
+      const DIMER_PITCH = 8.0;          // 8.0 nm dimer repeat
+      const MONOMER_STEP = 4.0;         // 4.0 nm α-to-β offset
+      const HELIX_RISE_PER_TURN = 12.0; // 3-start B-lattice pitch (3 * 4 nm)
+      const TUBE_LENGTH = NUM_RINGS * DIMER_PITCH; // 160 nm
+      const GAMMA_OPTIMAL = 0.57721;    // Euler–Mascheroni slippage constant
+
+      // --- Simulation State ---
+      const state = {
+        cutawayPercent: 38,
+        gamma: GAMMA_OPTIMAL,
+        oscRate: 1.0,
+        coupling: 0.85,
+        showDipoles: true,
+        showRadial: true,
+        showCallouts: true,
+        isPlaying: true,
+        simTime: 0
+      };
+
+      // --- Scene, Camera & Renderer ---
+      const container = document.getElementById('canvas-container');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x050811);
+      scene.fog = new THREE.FogExp2(0x050811, 0.004);
+
+      const camera = new THREE.PerspectiveCamera(
+        44,
+        Math.max(1, window.innerWidth) / Math.max(1, window.innerHeight),
+        0.5,
+        800
+      );
+      camera.position.set(44, 24, 68);
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: 'high-performance'
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      container.appendChild(renderer.domElement);
+
+      // --- OrbitControls ---
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.065;
+      controls.rotateSpeed = 0.75;
+      controls.zoomSpeed = 0.9;
+      controls.minDistance = 18;
+      controls.maxDistance = 240;
+      controls.target.set(0, 0, 0);
+
+      // --- Lighting Rig ---
+      scene.add(new THREE.AmbientLight(0x1e293b, 1.35));
+
+      const keyLight = new THREE.DirectionalLight(0xe0f2fe, 1.45);
+      keyLight.position.set(55, 70, 60);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.85);
+      rimLight.position.set(-60, -35, -50);
+      scene.add(rimLight);
+
+      const lumenLights = [];
+      [-45, 0, 45].forEach((zPos, idx) => {
+        const pt = new THREE.PointLight(idx === 1 ? 0xfbbf24 : 0x38bdf8, 1.5, 42, 1.6);
+        pt.position.set(0, 0, zPos);
+        scene.add(pt);
+        lumenLights.push(pt);
+      });
+
+      // --- Subtle Ambient Field ---
+      (function createAmbientField() {
+        const count = 650;
+        const positions = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+          const r = 130 + Math.random() * 230;
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(2 * Math.random() - 1);
+          positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+          positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+          positions[i * 3 + 2] = r * Math.cos(phi);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const mat = new THREE.PointsMaterial({
+          color: 0x64748b,
+          size: 0.8,
+          transparent: true,
+          opacity: 0.5
+        });
+        scene.add(new THREE.Points(geo, mat));
+      })();
+
+      // --- Main Microtubule Assembly ---
+      const microtubuleGroup = new THREE.Group();
+      scene.add(microtubuleGroup);
+
+      // 1. 25.0 nm Outer & 15.0 nm Inner Boundary Caliper Rings + Lumen Sleeve
+      const boundaryGroup = new THREE.Group();
+      microtubuleGroup.add(boundaryGroup);
+
+      function buildCalipers() {
+        const zFront = TUBE_LENGTH * 0.5 + 2.5;
+        const zBack = -TUBE_LENGTH * 0.5 - 2.5;
+
+        [zFront, zBack].forEach((zPos, faceIdx) => {
+          const scale = faceIdx === 0 ? 0.72 : 0.3;
+
+          const odRing = new THREE.Mesh(
+            new THREE.RingGeometry(OUTER_RADIUS - 0.15, OUTER_RADIUS + 0.15, 96),
+            new THREE.MeshBasicMaterial({
+              color: 0x38bdf8,
+              side: THREE.DoubleSide,
+              transparent: true,
+              opacity: scale
+            })
+          );
+          odRing.position.z = zPos;
+          boundaryGroup.add(odRing);
+
+          const idRing = new THREE.Mesh(
+            new THREE.RingGeometry(INNER_RADIUS - 0.13, INNER_RADIUS + 0.13, 72),
+            new THREE.MeshBasicMaterial({
+              color: 0xfbbf24,
+              side: THREE.DoubleSide,
+              transparent: true,
+              opacity: scale * 1.15
+            })
+          );
+          idRing.position.z = zPos;
+          boundaryGroup.add(idRing);
+        });
+
+        const sleeveGeo = new THREE.CylinderGeometry(
+          INNER_RADIUS,
+          INNER_RADIUS,
+          TUBE_LENGTH,
+          48,
+          1,
+          true
+        );
+        sleeveGeo.rotateX(Math.PI / 2);
+        const sleeveMat = new THREE.MeshBasicMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.05,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        boundaryGroup.add(new THREE.Mesh(sleeveGeo, sleeveMat));
+      }
+      buildCalipers();
+
+      // 2. 13-Protofilament α/β-Tubulin B-Lattice Shell + 2-Bit Dipole States + Seam
+      const shellGroup = new THREE.Group();
+      microtubuleGroup.add(shellGroup);
+
+      const dimerEntries = [];
+      const monomerGeo = new THREE.SphereGeometry(MONOMER_RADIUS, 20, 16);
+      monomerGeo.scale(1.04, 1.04, 0.96);
+
+      const dipoleNodeGeo = new THREE.SphereGeometry(0.62, 12, 10);
+      const seamMarkerGeo = new THREE.CylinderGeometry(0.18, 0.18, 4.6, 8);
+
+      function buildTubulinLattice() {
+        const zStart = -TUBE_LENGTH * 0.5 + MONOMER_STEP * 0.5;
+
+        for (let p = 0; p < NUM_PROTOFILAMENTS; p++) {
+          const theta = (p / NUM_PROTOFILAMENTS) * Math.PI * 2;
+          // 3-start B-lattice helical pitch across 13 protofilaments
+          const helicalStagger = (p / NUM_PROTOFILAMENTS) * HELIX_RISE_PER_TURN;
+
+          // Peel angle centered around +X/+Y front-right quadrant
+          const peelAngle = Math.atan2(Math.sin(theta - 0.65), Math.cos(theta - 0.65));
+          const normalizedPeel = Math.abs(peelAngle) / Math.PI; // 0 = cutaway center, 1 = back wall
+
+          const x = WALL_MID_RADIUS * Math.cos(theta);
+          const y = WALL_MID_RADIUS * Math.sin(theta);
+
+          for (let r = 0; r < NUM_RINGS; r++) {
+            const baseZ = zStart + r * DIMER_PITCH + helicalStagger - HELIX_RISE_PER_TURN * 0.5;
+            if (baseZ < -TUBE_LENGTH * 0.5 - 2 || baseZ > TUBE_LENGTH * 0.5 + 2) continue;
+
+            const dimerGroup = new THREE.Group();
+            dimerGroup.position.set(x, y, baseZ);
+            dimerGroup.rotation.z = theta;
+
+            // α-Tubulin Subunit
+            const alphaMat = new THREE.MeshStandardMaterial({
+              color: 0x1d4ed8,
+              roughness: 0.36,
+              metalness: 0.18,
+              emissive: 0x0f172a,
+              emissiveIntensity: 0.35
+            });
+            const alphaMesh = new THREE.Mesh(monomerGeo, alphaMat);
+            alphaMesh.position.z = -MONOMER_STEP * 0.5;
+            dimerGroup.add(alphaMesh);
+
+            // β-Tubulin Subunit
+            const betaMat = new THREE.MeshStandardMaterial({
+              color: 0x0f766e,
+              roughness: 0.34,
+              metalness: 0.2,
+              emissive: 0x042f2e,
+              emissiveIntensity: 0.4
+            });
+            const betaMesh = new THREE.Mesh(monomerGeo, betaMat);
+            betaMesh.position.z = MONOMER_STEP * 0.5;
+            dimerGroup.add(betaMesh);
+
+            // 2-Bit Dipole State Indicator
+            const dipoleMat = new THREE.MeshBasicMaterial({
+              color: 0xfbbf24,
+              transparent: true,
+              opacity: 0.92
+            });
+            const dipoleMesh = new THREE.Mesh(dipoleNodeGeo, dipoleMat);
+            dimerGroup.add(dipoleMesh);
+
+            // Distinct B-lattice seam marker along protofilament 0 boundary
+            if (p === 0) {
+              const seamMat = new THREE.MeshBasicMaterial({
+                color: 0xfb7185,
+                transparent: true,
+                opacity: 0.78
+              });
+              const seamMesh = new THREE.Mesh(seamMarkerGeo, seamMat);
+              seamMesh.position.set(0.35, -2.1, 0);
+              dimerGroup.add(seamMesh);
+            }
+
+            shellGroup.add(dimerGroup);
+
+            dimerEntries.push({
+              group: dimerGroup,
+              alphaMat,
+              betaMat,
+              dipoleMesh,
+              dipoleMat,
+              theta,
+              baseZ,
+              normalizedPeel,
+              phaseOffset: p * 0.48 + r * 0.36
+            });
+          }
+        }
+      }
+      buildTubulinLattice();
+
+      // 3. Coaxial Helical Twisted-Light Core (15.0 nm Lumen)
+      const lightCoreGroup = new THREE.Group();
+      microtubuleGroup.add(lightCoreGroup);
+
+      const SKEIN_COUNT = 6;
+      const SKEIN_SEGMENTS = 220;
+      const skeinMeshes = [];
+
+      function buildHelicalLightCore() {
+        for (let s = 0; s < SKEIN_COUNT; s++) {
+          const isGold = s % 2 === 0;
+          const basePhase = (s / SKEIN_COUNT) * Math.PI * 2;
+          const baseRadius = isGold ? 3.3 : 4.8;
+
+          const pts = [];
+          for (let i = 0; i <= SKEIN_SEGMENTS; i++) {
+            const t = i / SKEIN_SEGMENTS;
+            const z = (t - 0.5) * (TUBE_LENGTH + 14);
+            const twist = t * Math.PI * 10 + basePhase;
+            const braidRipple = Math.sin(t * Math.PI * 20 + basePhase * 2) * 0.65;
+            const rad = baseRadius + braidRipple;
+            pts.push(new THREE.Vector3(
+              rad * Math.cos(twist),
+              rad * Math.sin(twist),
+              z
+            ));
+          }
+
+          const curve = new THREE.CatmullRomCurve3(pts);
+          const geo = new THREE.TubeGeometry(curve, SKEIN_SEGMENTS, isGold ? 0.34 : 0.28, 10, false);
+          const mat = new THREE.MeshBasicMaterial({
+            color: isGold ? 0xfbbf24 : 0x38bdf8,
+            transparent: true,
+            opacity: 0.85
+          });
+          const mesh = new THREE.Mesh(geo, mat);
+          lightCoreGroup.add(mesh);
+          skeinMeshes.push({ mesh, mat, basePhase });
+        }
+
+        // Axial phase spine
+        const axisGeo = new THREE.CylinderGeometry(0.42, 0.42, TUBE_LENGTH + 18, 16);
+        axisGeo.rotateX(Math.PI / 2);
+        const axisMat = new THREE.MeshBasicMaterial({
+          color: 0xe0f2fe,
+          transparent: true,
+          opacity: 0.5
+        });
+        lightCoreGroup.add(new THREE.Mesh(axisGeo, axisMat));
+      }
+      buildHelicalLightCore();
+
+      // 4. Radial Resonant Coupling Pulses (Lumen Core <-> Tubulin Shell)
+      const radialGroup = new THREE.Group();
+      microtubuleGroup.add(radialGroup);
+
+      const radialPulses = [];
+      const pulseGeo = new THREE.SphereGeometry(0.32, 10, 8);
+
+      function buildRadialPulses() {
+        const pulseCount = 52;
+        for (let i = 0; i < pulseCount; i++) {
+          const t = i / pulseCount;
+          const z = (t - 0.5) * (TUBE_LENGTH - 8);
+          const pIdx = i % NUM_PROTOFILAMENTS;
+          const theta = (pIdx / NUM_PROTOFILAMENTS) * Math.PI * 2;
+
+          const lineGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(3.1 * Math.cos(theta), 3.1 * Math.sin(theta), z),
+            new THREE.Vector3(WALL_MID_RADIUS * Math.cos(theta), WALL_MID_RADIUS * Math.sin(theta), z)
+          ]);
+          const lineMat = new THREE.LineBasicMaterial({
+            color: 0x38bdf8,
+            transparent: true,
+            opacity: 0.24
+          });
+          const line = new THREE.Line(lineGeo, lineMat);
+          radialGroup.add(line);
+
+          const pktMat = new THREE.MeshBasicMaterial({
+            color: i % 2 === 0 ? 0xfbbf24 : 0x38bdf8,
+            transparent: true,
+            opacity: 0.9
+          });
+          const pkt = new THREE.Mesh(pulseGeo, pktMat);
+          radialGroup.add(pkt);
+
+          radialPulses.push({
+            lineMat,
+            pkt,
+            pktMat,
+            theta,
+            z,
+            phase: i * 0.73
+          });
+        }
+      }
+      buildRadialPulses();
+
+      // --- Camera Presets ---
+      const PRESETS = {
+        cutaway: {
+          pos: new THREE.Vector3(44, 24, 68),
+          target: new THREE.Vector3(0, 0, 0),
+          cutaway: 38
+        },
+        exterior: {
+          pos: new THREE.Vector3(52, 28, 74),
+          target: new THREE.Vector3(0, 0, 0),
+          cutaway: 0
+        },
+        cross: {
+          pos: new THREE.Vector3(0.5, 1.5, 118),
+          target: new THREE.Vector3(0, 0, 0),
+          cutaway: 45
+        },
+        seam: {
+          pos: new THREE.Vector3(34, 8, 22),
+          target: new THREE.Vector3(9, 0, 0),
+          cutaway: 12
+        }
+      };
+
+      let cameraTransition = null;
+
+      function applyCameraPreset(key) {
+        const preset = PRESETS[key];
+        if (!preset) return;
+
+        document.querySelectorAll('.preset-btn').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.preset === key);
+        });
+
+        cameraTransition = {
+          startPos: camera.position.clone(),
+          endPos: preset.pos.clone(),
+          startTarget: controls.target.clone(),
+          endTarget: preset.target.clone(),
+          progress: 0
+        };
+
+        state.cutawayPercent = preset.cutaway;
+        sliderCutaway.value = preset.cutaway;
+        lblCutaway.textContent = `${preset.cutaway}%`;
+      }
+
+      // --- UI Bindings ---
+      const sliderCutaway = document.getElementById('slider-cutaway');
+      const lblCutaway = document.getElementById('lbl-cutaway');
+      const sliderGamma = document.getElementById('slider-gamma');
+      const lblGamma = document.getElementById('lbl-gamma');
+      const sliderOsc = document.getElementById('slider-osc');
+      const lblOsc = document.getElementById('lbl-osc');
+      const sliderCoupling = document.getElementById('slider-coupling');
+      const lblCoupling = document.getElementById('lbl-coupling');
+
+      const valCoherence = document.getElementById('val-coherence');
+      const subCoherence = document.getElementById('sub-coherence');
+      const valGamma = document.getElementById('val-gamma');
+      const subSlippage = document.getElementById('sub-slippage');
+      const valCoupling = document.getElementById('val-coupling');
+      const subDimers = document.getElementById('sub-dimers');
+      const valFreq = document.getElementById('val-freq');
+
+      sliderCutaway.addEventListener('input', (e) => {
+        state.cutawayPercent = parseFloat(e.target.value);
+        lblCutaway.textContent = `${Math.round(state.cutawayPercent)}%`;
+      });
+
+      function setGamma(newGamma) {
+        state.gamma = newGamma;
+        const text = newGamma.toFixed(5);
+        sliderGamma.value = newGamma;
+        lblGamma.textContent = text;
+        valGamma.textContent = text;
+      }
+
+      sliderGamma.addEventListener('input', (e) => setGamma(parseFloat(e.target.value)));
+      document.getElementById('btn-reset-gamma').addEventListener('click', () => setGamma(GAMMA_OPTIMAL));
+
+      sliderOsc.addEventListener('input', (e) => {
+        state.oscRate = parseFloat(e.target.value);
+        lblOsc.textContent = `${state.oscRate.toFixed(2)}×`;
+        valFreq.textContent = `${(40.0 * state.oscRate).toFixed(1)} Hz`;
+      });
+
+      sliderCoupling.addEventListener('input', (e) => {
+        const pct = parseFloat(e.target.value);
+        state.coupling = pct / 100;
+        lblCoupling.textContent = `${Math.round(pct)}%`;
+      });
+
+      function bindToggle(btnId, propName, onToggle) {
+        const btn = document.getElementById(btnId);
+        btn.addEventListener('click', () => {
+          state[propName] = !state[propName];
+          btn.classList.toggle('active', state[propName]);
+          if (onToggle) onToggle(state[propName]);
+        });
+      }
+
+      bindToggle('tog-dipoles', 'showDipoles');
+      bindToggle('tog-radial', 'showRadial', (v) => { radialGroup.visible = v; });
+      bindToggle('tog-callouts', 'showCallouts', (v) => {
+        document.getElementById('callout-layer').style.opacity = v ? '1' : '0';
+      });
+      bindToggle('tog-play', 'isPlaying', (v) => {
+        document.getElementById('play-text').textContent = v ? 'Running' : 'Paused';
+      });
+
+      document.querySelectorAll('.preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => applyCameraPreset(btn.dataset.preset));
+      });
+
+      const drawer = document.getElementById('controls-drawer');
+      document.getElementById('btn-toggle-drawer').addEventListener('click', () => {
+        drawer.classList.toggle('collapsed');
+      });
+
+      const infoModal = document.getElementById('info-modal');
+      document.getElementById('btn-open-info').addEventListener('click', () => infoModal.classList.add('open'));
+      document.getElementById('btn-close-info').addEventListener('click', () => infoModal.classList.remove('open'));
+      infoModal.addEventListener('click', (e) => {
+        if (e.target === infoModal) infoModal.classList.remove('open');
+      });
+
+      // --- 3D Dimension Callout Projection ---
+      const calloutAnchors = [
+        { el: document.getElementById('tag-od'), vec: new THREE.Vector3(0, OUTER_RADIUS + 1.8, TUBE_LENGTH * 0.5) },
+        { el: document.getElementById('tag-id'), vec: new THREE.Vector3(0, -INNER_RADIUS + 1.2, TUBE_LENGTH * 0.5) },
+        { el: document.getElementById('tag-dimer'), vec: new THREE.Vector3(-OUTER_RADIUS - 1.5, 4, 16) },
+        { el: document.getElementById('tag-seam'), vec: new THREE.Vector3(OUTER_RADIUS + 1.2, -2, -24) }
+      ];
+
+      function updateCalloutPositions() {
+        if (!state.showCallouts) return;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const proj = new THREE.Vector3();
+
+        for (let i = 0; i < calloutAnchors.length; i++) {
+          const { el, vec } = calloutAnchors[i];
+          proj.copy(vec).applyMatrix4(microtubuleGroup.matrixWorld).project(camera);
+          if (proj.z > 1) {
+            el.style.opacity = '0';
+            continue;
+          }
+          el.style.left = `${(proj.x * 0.5 + 0.5) * w}px`;
+          el.style.top = `${(-proj.y * 0.5 + 0.5) * h}px`;
+          el.style.opacity = '0.92';
+        }
+      }
+
+      // --- Coherence & Coupling Telemetry ---
+      function updateTelemetry(visibleCount) {
+        const deltaGamma = Math.abs(state.gamma - GAMMA_OPTIMAL);
+        const gammaResonance = Math.exp(-Math.pow(deltaGamma / 0.28, 2));
+        const couplingGain = 0.45 + 0.55 * state.coupling;
+        const coherencePct = Math.min(99.8, Math.max(18.0, gammaResonance * couplingGain * 99.4));
+
+        valCoherence.textContent = `${coherencePct.toFixed(1)}%`;
+
+        if (deltaGamma < 0.045 && state.coupling > 0.5) {
+          subCoherence.textContent = 'γ-Locked (99% Cushion)';
+          subCoherence.style.color = '#34d399';
+          subSlippage.textContent = 'Optimal Tolerance';
+        } else if (state.gamma < 0.2) {
+          subCoherence.textContent = 'Brittle / Zero-Slip';
+          subCoherence.style.color = '#fb7185';
+          subSlippage.textContent = 'Thermal Fragility';
+        } else if (state.gamma > 0.85) {
+          subCoherence.textContent = 'High Phase Slip';
+          subCoherence.style.color = '#fbbf24';
+          subSlippage.textContent = 'Drift Regime';
+        } else {
+          subCoherence.textContent = 'Quasi-Coherent';
+          subCoherence.style.color = '#94a3b8';
+          subSlippage.textContent = 'Active Cushion';
+        }
+
+        if (state.coupling > 0.65 && coherencePct > 75) {
+          valCoupling.textContent = 'RESONANT';
+          valCoupling.style.color = '#34d399';
+        } else if (state.coupling > 0.2) {
+          valCoupling.textContent = 'PARTIAL';
+          valCoupling.style.color = '#fbbf24';
+        } else {
+          valCoupling.textContent = 'DECOUPLED';
+          valCoupling.style.color = '#fb7185';
+        }
+
+        subDimers.textContent = `${visibleCount}/${dimerEntries.length} Dimers`;
+        return { coherenceNorm: coherencePct / 100, deltaGamma };
+      }
+
+      // --- Animation Loop ---
+      const clock = new THREE.Clock();
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const dt = Math.min(clock.getDelta(), 0.05);
+        if (state.isPlaying) {
+          state.simTime += dt * state.oscRate;
+        }
+
+        if (cameraTransition) {
+          cameraTransition.progress = Math.min(1, cameraTransition.progress + dt * 2.4);
+          const ease = 1 - Math.pow(1 - cameraTransition.progress, 3);
+          camera.position.lerpVectors(cameraTransition.startPos, cameraTransition.endPos, ease);
+          controls.target.lerpVectors(cameraTransition.startTarget, cameraTransition.endTarget, ease);
+          if (cameraTransition.progress >= 1) cameraTransition = null;
+        }
+
+        controls.update();
+
+        // Map 0..100% cutaway slider to angular peel threshold
+        const cutThreshold = state.cutawayPercent / 100;
+        let visibleDimers = 0;
+
+        for (let i = 0; i < dimerEntries.length; i++) {
+          const d = dimerEntries[i];
+          if (cutThreshold > 0.002 && d.normalizedPeel < cutThreshold) {
+            d.group.visible = false;
+            continue;
+          }
+          d.group.visible = true;
+          visibleDimers++;
+
+          // Subtle least-action / thermal radial micro-oscillation scaled by γ
+          const microJitter = (0.04 + state.gamma * 0.14) * Math.sin(state.simTime * 4.5 + d.phaseOffset * 3.1);
+          d.group.position.x = (WALL_MID_RADIUS + microJitter) * Math.cos(d.theta);
+          d.group.position.y = (WALL_MID_RADIUS + microJitter) * Math.sin(d.theta);
+
+          // 2-bit dipole shift between α and β pockets with γ phase buffer
+          const slipPhase = state.gamma * Math.sin(state.simTime * 1.7 + d.baseZ * 0.04);
+          const wave = Math.sin(state.simTime * 2.6 - d.phaseOffset + slipPhase);
+
+          if (state.showDipoles) {
+            d.dipoleMesh.visible = true;
+            d.dipoleMesh.position.z = wave * 1.65 * state.coupling;
+
+            if (wave > 0.15) {
+              d.dipoleMat.color.setHex(0xfbbf24);
+              d.betaMat.emissive.setHex(0x78350f);
+              d.betaMat.emissiveIntensity = 0.25 + 0.45 * wave * state.coupling;
+              d.alphaMat.emissiveIntensity = 0.2;
+            } else if (wave < -0.15) {
+              d.dipoleMat.color.setHex(0x38bdf8);
+              d.alphaMat.emissive.setHex(0x0c4a6e);
+              d.alphaMat.emissiveIntensity = 0.25 + 0.45 * Math.abs(wave) * state.coupling;
+              d.betaMat.emissiveIntensity = 0.2;
+            } else {
+              d.dipoleMat.color.setHex(0x34d399);
+            }
+          } else {
+            d.dipoleMesh.visible = false;
+            d.alphaMat.emissiveIntensity = 0.25;
+            d.betaMat.emissiveIntensity = 0.25;
+          }
+        }
+
+        const { coherenceNorm, deltaGamma } = updateTelemetry(visibleDimers);
+
+        // Rotate coaxial twisted-light core inside 15 nm lumen
+        lightCoreGroup.rotation.z = state.simTime * 0.85;
+        for (let s = 0; s < skeinMeshes.length; s++) {
+          const skein = skeinMeshes[s];
+          const pulse = 0.65 + 0.35 * Math.sin(state.simTime * 3.2 + skein.basePhase);
+          skein.mat.opacity = (0.38 + 0.55 * coherenceNorm) * pulse;
+        }
+
+        for (let l = 0; l < lumenLights.length; l++) {
+          lumenLights[l].intensity = 1.0 + 0.8 * coherenceNorm * Math.sin(state.simTime * 2.4 + l * 1.4);
+        }
+
+        // Radial coupling packets bridging 15 nm lumen core and 25 nm tubulin wall
+        if (state.showRadial) {
+          for (let i = 0; i < radialPulses.length; i++) {
+            const rp = radialPulses[i];
+            const travel = 0.5 + 0.5 * Math.sin(state.simTime * 3.4 + rp.phase + deltaGamma * 2.0);
+            const r = 3.1 + travel * (WALL_MID_RADIUS - 3.1);
+            rp.pkt.position.set(r * Math.cos(rp.theta), r * Math.sin(rp.theta), rp.z);
+            rp.pktMat.opacity = state.coupling * (0.35 + 0.65 * coherenceNorm);
+            rp.lineMat.opacity = state.coupling * 0.28;
+          }
+        }
+
+        if (state.isPlaying) {
+          microtubuleGroup.rotation.y = Math.sin(state.simTime * 0.18) * 0.14;
+        }
+
+        updateCalloutPositions();
+        renderer.render(scene, camera);
+      }
+
+      window.addEventListener('resize', () => {
+        camera.aspect = Math.max(1, window.innerWidth) / Math.max(1, window.innerHeight);
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      window.addEventListener('load', animate);
+    })();
+  </script>
+</body>
+</html>
