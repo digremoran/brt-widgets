@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A-D / D-A Boundary Governor — Beyond Real Time</title>
+  <!-- Tailwind CSS for clean, responsive dark HUD styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono for crisp telemetry -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-void: #07090f;
+      --panel-bg: rgba(11, 16, 28, 0.78);
+      --panel-border: rgba(56, 189, 248, 0.22);
+      --accent-cyan: #38bdf8;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --accent-crimson: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-void);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #e2e8f0;
+    }
+
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    /* Translucent Dark Glass HUD */
+    .glass-panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    /* Custom Range Sliders */
+    input[type="range"].gov-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      background: rgba(148, 163, 184, 0.2);
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"].gov-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #07090f;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.2s ease;
+    }
+
+    input[type="range"].gov-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #7dd3fc;
+    }
+
+    input[type="range"].gov-slider.amber-thumb::-webkit-slider-thumb {
+      background: #f59e0b;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+    }
+
+    input[type="range"].gov-slider.emerald-thumb::-webkit-slider-thumb {
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);
+    }
+
+    /* Subtle pulse for live indicator */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.88); }
+    }
+    .live-dot {
+      animation: pulseGlow 2.2s infinite ease-in-out;
+    }
+
+    /* Custom scrollbar for small viewports */
+    .hud-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+    .hud-scroll::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Full-Viewport Three.js Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Top-Left Brand & Conceptual Header -->
+  <header class="fixed top-3 left-3 sm:top-5 sm:left-5 z-10 pointer-events-none max-w-[calc(100vw-6.5rem)] sm:max-w-md">
+    <div class="glass-panel rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 pointer-events-auto">
+      <div class="flex items-center gap-2">
+        <span id="header-dot" class="w-2 h-2 rounded-full bg-emerald-400 live-dot"></span>
+        <span class="text-[10px] sm:text-[11px] font-mono-tech uppercase tracking-[0.18em] text-sky-400/90">
+          Beyond Real Time // Probe 09
+        </span>
+      </div>
+      <h1 class="text-sm sm:text-base font-semibold tracking-tight text-slate-100 mt-0.5">
+        A-D / D-A Boundary Governor
+      </h1>
+      <p class="hidden sm:block text-[11px] text-slate-400 leading-relaxed mt-1">
+        Continuous analog wave-vortex folding against a rigid <span class="text-sky-300">B-Rep boundary shell</span>.
+        Action condenses where wave crests meet the edge (<span class="text-amber-300/90">Goethe boundary rule</span>).
+      </p>
+    </div>
+  </header>
+
+  <!-- Top-Right Collapsible Controls Panel -->
+  <aside class="fixed top-3 right-3 sm:top-5 sm:right-5 z-20 flex flex-col items-end">
+    <!-- Collapse / Expand Toggle Button -->
+    <button
+      id="toggle-controls-btn"
+      type="button"
+      aria-label="Toggle Governor Controls"
+      class="glass-panel rounded-xl px-3 py-2 text-xs font-medium text-slate-200 hover:text-sky-300 hover:border-sky-400/50 transition flex items-center gap-2 cursor-pointer"
+    >
+      <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+      </svg>
+      <span id="toggle-controls-label">Governor</span>
+    </button>
+
+    <!-- Main Controls Drawer -->
+    <div
+      id="controls-drawer"
+      class="glass-panel rounded-2xl p-4 mt-2 w-[290px] sm:w-[330px] max-h-[calc(100vh-8.5rem)] overflow-y-auto hud-scroll transition-all duration-200"
+    >
+      <!-- Presets Row -->
+      <div class="mb-3.5">
+        <div class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mb-1.5">
+          Regime Presets
+        </div>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button
+            id="preset-equilibrium"
+            type="button"
+            class="px-2 py-1.5 rounded-lg text-[10px] font-mono-tech bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 hover:bg-emerald-500/25 transition cursor-pointer text-center leading-tight"
+          >
+            Equilibrium<br/><span class="text-[9px] opacity-80">γ=0.577</span>
+          </button>
+          <button
+            id="preset-locked"
+            type="button"
+            class="px-2 py-1.5 rounded-lg text-[10px] font-mono-tech bg-amber-500/15 border border-amber-400/40 text-amber-300 hover:bg-amber-500/25 transition cursor-pointer text-center leading-tight"
+          >
+            Zero Slip<br/><span class="text-[9px] opacity-80">γ=0.000</span>
+          </button>
+          <button
+            id="preset-blowup"
+            type="button"
+            class="px-2 py-1.5 rounded-lg text-[10px] font-mono-tech bg-rose-500/15 border border-rose-400/40 text-rose-300 hover:bg-rose-500/25 transition cursor-pointer text-center leading-tight"
+          >
+            Undamped<br/><span class="text-[9px] opacity-80">ν=0.000</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="h-px bg-slate-700/50 my-3"></div>
+
+      <!-- Slider 1: Slippage (Euler-Mascheroni) -->
+      <div class="mb-3.5">
+        <div class="flex items-center justify-between text-xs mb-1">
+          <label for="slider-gamma" class="font-medium text-slate-200">
+            Slippage (<span class="text-sky-400 font-mono-tech">γ</span>)
+          </label>
+          <div class="flex items-center gap-1.5">
+            <span id="val-gamma" class="font-mono-tech text-xs text-sky-300">0.57721</span>
+            <button
+              id="reset-gamma"
+              type="button"
+              title="Reset to Euler-Mascheroni constant (0.57721)"
+              class="text-[9px] font-mono-tech px-1.5 py-0.5 rounded bg-slate-800 hover:bg-sky-900/60 text-sky-300 border border-sky-500/30 cursor-pointer"
+            >
+              γ₀
+            </button>
+          </div>
+        </div>
+        <input
+          id="slider-gamma"
+          type="range"
+          min="0"
+          max="1"
+          step="0.00001"
+          value="0.57721"
+          class="gov-slider"
+        />
+        <div class="flex justify-between text-[9px] font-mono-tech text-slate-500 mt-1">
+          <span>0.000 (Stalled Lock)</span>
+          <span>0.57721 (24/7 Slip)</span>
+          <span>1.000</span>
+        </div>
+      </div>
+
+      <!-- Slider 2: Scale Cascade (Feigenbaum delta) -->
+      <div class="mb-3.5">
+        <div class="flex items-center justify-between text-xs mb-1">
+          <label for="slider-delta" class="font-medium text-slate-200">
+            Scale Cascade (<span class="text-amber-400 font-mono-tech">δ</span>)
+          </label>
+          <div class="flex items-center gap-1.5">
+            <span id="val-delta" class="font-mono-tech text-xs text-amber-300">4.66920</span>
+            <button
+              id="reset-delta"
+              type="button"
+              title="Reset to Feigenbaum delta (4.669201)"
+              class="text-[9px] font-mono-tech px-1.5 py-0.5 rounded bg-slate-800 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 cursor-pointer"
+            >
+              δ₀
+            </button>
+          </div>
+        </div>
+        <input
+          id="slider-delta"
+          type="range"
+          min="1.0"
+          max="8.0"
+          step="0.001"
+          value="4.669201"
+          class="gov-slider amber-thumb"
+        />
+        <div class="flex justify-between text-[9px] font-mono-tech text-slate-500 mt-1">
+          <span>1.00 (Laminar)</span>
+          <span>4.669 (Feigenbaum)</span>
+          <span>8.00 (Tight Fold)</span>
+        </div>
+      </div>
+
+      <!-- Slider 3: Damping Governor (Navier-Stokes Viscosity) -->
+      <div class="mb-3.5">
+        <div class="flex items-center justify-between text-xs mb-1">
+          <label for="slider-nu" class="font-medium text-slate-200">
+            Damping Brake (<span class="text-emerald-400 font-mono-tech">ν</span>)
+          </label>
+          <div class="flex items-center gap-1.5">
+            <span id="val-nu" class="font-mono-tech text-xs text-emerald-300">0.065</span>
+            <button
+              id="reset-nu"
+              type="button"
+              title="Reset to Balanced Damping (0.065)"
+              class="text-[9px] font-mono-tech px-1.5 py-0.5 rounded bg-slate-800 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 cursor-pointer"
+            >
+              ν₀
+            </button>
+          </div>
+        </div>
+        <input
+          id="slider-nu"
+          type="range"
+          min="0"
+          max="0.25"
+          step="0.001"
+          value="0.065"
+          class="gov-slider emerald-thumb"
+        />
+        <div class="flex justify-between text-[9px] font-mono-tech text-slate-500 mt-1">
+          <span>0.000 (Surge Risk)</span>
+          <span>0.065 (Balanced)</span>
+          <span>0.250 (Overdamped)</span>
+        </div>
+      </div>
+
+      <div class="h-px bg-slate-700/50 my-3"></div>
+
+      <!-- Jazz Touch Web Audio Synthesizer + Orbit Controls -->
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <button
+            id="audio-toggle-btn"
+            type="button"
+            class="flex-1 py-2 px-3 rounded-xl text-xs font-medium border border-slate-600/60 bg-slate-800/70 text-slate-300 hover:border-sky-400/50 hover:text-white transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <svg id="audio-icon-off" class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+            </svg>
+            <svg id="audio-icon-on" class="w-4 h-4 text-amber-400 hidden" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+            </svg>
+            <span id="audio-label">Jazz Touch Audio: OFF</span>
+          </button>
+
+          <button
+            id="orbit-toggle-btn"
+            type="button"
+            title="Toggle Auto-Orbit Camera"
+            class="py-2 px-2.5 rounded-xl text-xs font-mono-tech border border-sky-500/40 bg-sky-500/15 text-sky-300 hover:bg-sky-500/25 transition cursor-pointer"
+          >
+            Orbit: ON
+          </button>
+        </div>
+
+        <!-- Volume Slider (visible when audio enabled) -->
+        <div id="volume-row" class="hidden pt-1">
+          <div class="flex items-center justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+            <span>Touch Gain (Pad + Ride Bell)</span>
+            <span id="val-volume">65%</span>
+          </div>
+          <input
+            id="slider-volume"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.65"
+            class="gov-slider amber-thumb"
+          />
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Live Telemetry HUD Bar -->
+  <footer class="fixed bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 z-10 pointer-events-none flex justify-center">
+    <div class="glass-panel rounded-2xl px-3.5 py-2.5 sm:px-5 sm:py-3 w-full max-w-4xl pointer-events-auto">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-4 items-center">
+        <!-- Analog Energy -->
+        <div>
+          <div class="text-[9px] sm:text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">
+            Analog Field (E<sub>A</sub>)
+          </div>
+          <div id="tele-ea" class="font-mono-tech text-xs sm:text-sm font-semibold text-sky-300 mt-0.5">
+            1.0000
+          </div>
+        </div>
+
+        <!-- Digital Sample Energy -->
+        <div>
+          <div class="text-[9px] sm:text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">
+            Digital Sample (E<sub>D</sub>)
+          </div>
+          <div id="tele-ed" class="font-mono-tech text-xs sm:text-sm font-semibold text-amber-300 mt-0.5">
+            1.0000
+          </div>
+        </div>
+
+        <!-- Wheeler-DeWitt Balance -->
+        <div>
+          <div class="text-[9px] sm:text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">
+            W-DeWitt (ΔE = E<sub>A</sub>−E<sub>D</sub>)
+          </div>
+          <div id="tele-delta-e" class="font-mono-tech text-xs sm:text-sm font-semibold text-emerald-400 mt-0.5">
+            +0.0000
+          </div>
+        </div>
+
+        <!-- Active Boundary Nodes -->
+        <div>
+          <div class="text-[9px] sm:text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">
+            B-Rep Edge Nodes
+          </div>
+          <div id="tele-nodes" class="font-mono-tech text-xs sm:text-sm font-semibold text-slate-100 mt-0.5">
+            16 / 32 LOCKED
+          </div>
+        </div>
+
+        <!-- System Phase State Badge -->
+        <div class="col-span-2 sm:col-span-1 flex sm:justify-end">
+          <div
+            id="state-badge"
+            class="w-full sm:w-auto text-center px-3 py-1.5 rounded-xl font-mono-tech text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase border bg-emerald-500/15 border-emerald-400/40 text-emerald-300 transition-colors duration-200"
+          >
+            24/7 FLOW // BALANCED
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Three.js & OrbitControls via ES Module Import Map -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // =========================================================================
+    // 1. SIMULATION CONSTANTS & STATE
+    // =========================================================================
+    const EULER_MASCHERONI = 0.5772156649;
+    const FEIGENBAUM_DELTA = 4.6692016091;
+    const BALANCED_NU = 0.065;
+    const BOUNDARY_RADIUS = 5.0;
+    const NODE_COUNT = 32; // Discrete boundary octahedra around the B-Rep shell
+
+    const state = {
+      gamma: 0.57721,      // Phase slippage (Euler-Mascheroni)
+      delta: 4.669201,     // Multi-scale cascade folding (Feigenbaum)
+      nu: 0.065,           // Navier-Stokes viscosity damping governor
+      autoOrbit: true,
+      audioEnabled: false,
+      audioVolume: 0.65,
+      simPhase: 0.0,       // Accumulated A-D <-> D-A cycle phase
+      surgeEnergy: 0.0,    // Accumulated boundary tension when nu -> 0
+      analogEnergy: 1.0,
+      digitalEnergy: 1.0,
+      deltaEnergy: 0.0,
+      activeNodes: 16
+    };
+
+    // =========================================================================
+    // 2. JAZZ TOUCH WEB AUDIO SYNTHESIZER (Analog Pad + Ride Bell / Shimmer)
+    // =========================================================================
+    class JazzTouchAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.padOsc1 = null;
+        this.padOsc2 = null;
+        this.padFilter = null;
+        this.padGain = null;
+        this.noiseBuffer = null;
+        this.lastPingTime = 0;
+        this.isRunning = false;
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+
+        // Master output gain
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(state.audioVolume * 0.45, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+
+        // Warm continuous analog harmonic drone (Fmaj9 / D-minor modal jazz voicing)
+        this.padFilter = this.ctx.createBiquadFilter();
+        this.padFilter.type = 'lowpass';
+        this.padFilter.frequency.setValueAtTime(280, this.ctx.currentTime);
+        this.padFilter.Q.setValueAtTime(2.5, this.ctx.currentTime);
+
+        this.padGain = this.ctx.createGain();
+        this.padGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+
+        this.padOsc1 = this.ctx.createOscillator();
+        this.padOsc1.type = 'triangle';
+        this.padOsc1.frequency.setValueAtTime(110.0, this.ctx.currentTime); // A2
+
+        this.padOsc2 = this.ctx.createOscillator();
+        this.padOsc2.type = 'sine';
+        this.padOsc2.frequency.setValueAtTime(164.81, this.ctx.currentTime); // E3 (open fifth)
+
+        this.padOsc1.connect(this.padFilter);
+        this.padOsc2.connect(this.padFilter);
+        this.padFilter.connect(this.padGain);
+        this.padGain.connect(this.masterGain);
+
+        this.padOsc1.start();
+        this.padOsc2.start();
+
+        // Pre-build short white-noise buffer for brushed ride-cymbal shimmer
+        const sampleRate = this.ctx.sampleRate;
+        const length = Math.floor(sampleRate * 0.45);
+        this.noiseBuffer = this.ctx.createBuffer(1, length, sampleRate);
+        const data = this.noiseBuffer.getChannelData(0);
+        for (let i = 0; i < length; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+      }
+
+      toggle() {
+        if (!this.ctx) {
+          this.init();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+
+        this.isRunning = !this.isRunning;
+        const now = this.ctx.currentTime;
+        if (this.isRunning) {
+          this.padGain.gain.cancelScheduledValues(now);
+          this.padGain.gain.setTargetAtTime(0.24, now, 0.25);
+        } else {
+          this.padGain.gain.cancelScheduledValues(now);
+          this.padGain.gain.setTargetAtTime(0.0001, now, 0.12);
+        }
+        return this.isRunning;
+      }
+
+      setVolume(vol) {
+        if (!this.ctx || !this.masterGain) return;
+        this.masterGain.gain.setTargetAtTime(vol * 0.45, this.ctx.currentTime, 0.08);
+      }
+
+      // Modulate continuous analog drone with live wave energy & slippage
+      updateAnalogPad(analogEnergy, gamma, surgeEnergy) {
+        if (!this.isRunning || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const cutoff = Math.min(1800, 220 + analogEnergy * 190 + surgeEnergy * 420);
+        const detune = (gamma - EULER_MASCHERONI) * 18 + surgeEnergy * 25;
+
+        this.padFilter.frequency.setTargetAtTime(cutoff, now, 0.08);
+        this.padOsc1.detune.setTargetAtTime(detune, now, 0.1);
+        this.padOsc2.detune.setTargetAtTime(-detune * 0.7, now, 0.1);
+      }
+
+      // Trigger delicate metallic ride-bell ping + cymbal brush shimmer on boundary lock
+      triggerRideBell(intensity = 0.7, nodeIndex = 0) {
+        if (!this.isRunning || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Rate limit pings so fast cascades sound musical rather than cluttered
+        if (now - this.lastPingTime < 0.11) return;
+        this.lastPingTime = now;
+
+        const vel = Math.min(1.0, Math.max(0.15, intensity));
+
+        // Inharmonic metallic bell partials (jazz ride bell character)
+        const baseFreqs = [880, 1318.5, 1975.5, 2637];
+        const pitchShift = 1.0 + ((nodeIndex % 5) - 2) * 0.035;
+
+        baseFreqs.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f * pitchShift, now);
+
+          const partialAmp = (0.09 / (idx + 1)) * vel;
+          const decay = 0.35 / (idx * 0.6 + 1);
+
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(partialAmp, now + 0.004);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + decay + 0.02);
+        });
+
+        // High-Q bandpass noise burst for brushed cymbal shimmer
+        if (this.noiseBuffer) {
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = this.noiseBuffer;
+
+          const hp = this.ctx.createBiquadFilter();
+          hp.type = 'bandpass';
+          hp.frequency.setValueAtTime(6400 + (nodeIndex % 4) * 450, now);
+          hp.Q.setValueAtTime(4.8, now);
+
+          const nGain = this.ctx.createGain();
+          nGain.gain.setValueAtTime(0.0001, now);
+          nGain.gain.linearRampToValueAtTime(0.065 * vel, now + 0.008);
+          nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+          noise.connect(hp);
+          hp.connect(nGain);
+          nGain.connect(this.masterGain);
+          noise.start(now);
+          noise.stop(now + 0.3);
+        }
+      }
+    }
+
+    const audioEngine = new JazzTouchAudioEngine();
+
+    // =========================================================================
+    // 3. THREE.JS SCENE, CAMERA & RENDERER SETUP
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x07090f);
+    scene.fog = new THREE.FogExp2(0x07090f, 0.028);
+
+    const camera = new THREE.PerspectiveCamera(
+      46,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      120
+    );
+    camera.position.set(0, 4.2, 14.5);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.055;
+    controls.minDistance = 6.5;
+    controls.maxDistance = 26.0;
+    controls.autoRotate = state.autoOrbit;
+    controls.autoRotateSpeed = 0.65;
+
+    // Scene Lighting
+    const ambientLight = new THREE.AmbientLight(0x1e293b, 1.4);
+    scene.add(ambientLight);
+
+    const coreLight = new THREE.PointLight(0x38bdf8, 4.5, 18, 1.4);
+    coreLight.position.set(0, 0, 0);
+    scene.add(coreLight);
+
+    const rimLight1 = new THREE.DirectionalLight(0x38bdf8, 1.6);
+    rimLight1.position.set(8, 10, 7);
+    scene.add(rimLight1);
+
+    const rimLight2 = new THREE.DirectionalLight(0xf59e0b, 1.1);
+    rimLight2.position.set(-9, -6, -8);
+    scene.add(rimLight2);
+
+    // Master Group for subtle global rotation
+    const rootGroup = new THREE.Group();
+    scene.add(rootGroup);
+
+    // =========================================================================
+    // 4. B-REP BOUNDARY CAGE (Outer Polyhedral Skin + Equatorial Rings)
+    // =========================================================================
+    const boundaryGroup = new THREE.Group();
+    rootGroup.add(boundaryGroup);
+
+    // Primary B-Rep Geodesic Polyhedral Shell (Radius = 5.0)
+    const shellGeo = new THREE.IcosahedronGeometry(BOUNDARY_RADIUS, 2);
+    const shellEdges = new THREE.EdgesGeometry(shellGeo);
+    const shellLineMat = new THREE.LineBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.24
+    });
+    const shellWireframe = new THREE.LineSegments(shellEdges, shellLineMat);
+    boundaryGroup.add(shellWireframe);
+
+    // Subtle translucent glass/Fresnel boundary skin
+    const shellSkinMat = new THREE.MeshPhysicalMaterial({
+      color: 0x0ea5e9,
+      transparent: true,
+      opacity: 0.045,
+      roughness: 0.15,
+      metalness: 0.1,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const shellSkinMesh = new THREE.Mesh(shellGeo, shellSkinMat);
+    boundaryGroup.add(shellSkinMesh);
+
+    // Three Orthogonal Bloch / B-Rep Reference Rings
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.32
+    });
+    const ringGeo = new THREE.TorusGeometry(BOUNDARY_RADIUS * 1.004, 0.014, 8, 128);
+
+    const ringXY = new THREE.Mesh(ringGeo, ringMat);
+    const ringXZ = new THREE.Mesh(ringGeo, ringMat);
+    ringXZ.rotation.x = Math.PI / 2;
+    const ringYZ = new THREE.Mesh(ringGeo, ringMat);
+    ringYZ.rotation.y = Math.PI / 2;
+    boundaryGroup.add(ringXY, ringXZ, ringYZ);
+
+    // =========================================================================
+    // 5. CONTINUOUS ANALOG WAVE-VORTEX CORE (Parametric Deforming Ribbon)
+    // =========================================================================
+    const ribbonSegmentsU = 220; // Along helical vortex path
+    const ribbonSegmentsV = 18;  // Across ribbon width
+    const ribbonGeo = new THREE.PlaneGeometry(1, 1, ribbonSegmentsU, ribbonSegmentsV);
+
+    // Enable vertex colors for analog amplitude -> boundary gradient
+    const vertexCount = ribbonGeo.attributes.position.count;
+    const colors = new Float32Array(vertexCount * 3);
+    ribbonGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const ribbonMat = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.28,
+      metalness: 0.35,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.88
+    });
+
+    const analogRibbonMesh = new THREE.Mesh(ribbonGeo, ribbonMat);
+    rootGroup.add(analogRibbonMesh);
+
+    // Inner glowing filament spine tracing the center of the analog wave
+    const spinePointsCount = ribbonSegmentsU + 1;
+    const spinePositions = new Float32Array(spinePointsCount * 3);
+    const spineGeo = new THREE.BufferGeometry();
+    spineGeo.setAttribute('position', new THREE.BufferAttribute(spinePositions, 3));
+    const spineMat = new THREE.LineBasicMaterial({
+      color: 0x7dd3fc,
+      transparent: true,
+      opacity: 0.85
+    });
+    const analogSpineLine = new THREE.Line(spineGeo, spineMat);
+    rootGroup.add(analogSpineLine);
+
+    // =========================================================================
+    // 6. DISCRETE DIGITAL BOUNDARY SAMPLES (Octahedra + Tension Filaments)
+    // =========================================================================
+    const nodesGroup = new THREE.Group();
+    rootGroup.add(nodesGroup);
+
+    const octGeo = new THREE.OctahedronGeometry(0.24, 0);
+    const haloGeo = new THREE.RingGeometry(0.28, 0.38, 24);
+
+    const boundaryNodes = [];
+    // Fibonacci sphere distribution for uniform B-Rep boundary sampling sites
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+    for (let i = 0; i < NODE_COUNT; i++) {
+      const y = 1 - (i / (NODE_COUNT - 1)) * 2;
+      const radiusAtY = Math.sqrt(1 - y * y);
+      const theta = goldenAngle * i;
+
+      const unitDir = new THREE.Vector3(
+        Math.cos(theta) * radiusAtY,
+        y,
+        Math.sin(theta) * radiusAtY
+      ).normalize();
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.6,
+        roughness: 0.2,
+        metalness: 0.6
+      });
+
+      const mesh = new THREE.Mesh(octGeo, mat);
+      mesh.position.copy(unitDir).multiplyScalar(BOUNDARY_RADIUS);
+      nodesGroup.add(mesh);
+
+      // Surface contact halo ring tangent to the B-Rep sphere
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.0,
+        side: THREE.DoubleSide
+      });
+      const halo = new THREE.Mesh(haloGeo, haloMat);
+      halo.position.copy(unitDir).multiplyScalar(BOUNDARY_RADIUS * 1.002);
+      halo.lookAt(unitDir.clone().multiplyScalar(BOUNDARY_RADIUS * 2));
+      nodesGroup.add(halo);
+
+      boundaryNodes.push({
+        index: i,
+        unitDir,
+        mesh,
+        mat,
+        halo,
+        haloMat,
+        activation: 0,
+        wasLocked: false
+      });
+    }
+
+    // Dynamic Tension Filaments connecting locked boundary octahedra to wave crests
+    const maxFilamentSegments = NODE_COUNT * 2;
+    const filamentPositions = new Float32Array(maxFilamentSegments * 2 * 3);
+    const filamentColors = new Float32Array(maxFilamentSegments * 2 * 3);
+    const filamentGeo = new THREE.BufferGeometry();
+    filamentGeo.setAttribute('position', new THREE.BufferAttribute(filamentPositions, 3));
+    filamentGeo.setAttribute('color', new THREE.BufferAttribute(filamentColors, 3));
+
+    const filamentMat = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.65
+    });
+    const tensionFilaments = new THREE.LineSegments(filamentGeo, filamentMat);
+    rootGroup.add(tensionFilaments);
+
+    // Subtle ambient starfield/dust particles outside the cage for spatial depth
+    const dustCount = 260;
+    const dustPos = new Float32Array(dustCount * 3);
+    for (let i = 0; i < dustCount; i++) {
+      const r = 8.5 + Math.random() * 18;
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      dustPos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+      dustPos[i * 3 + 1] = r * Math.cos(ph);
+      dustPos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
+    }
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    const dustMat = new THREE.PointsMaterial({
+      color: 0x64748b,
+      size: 0.06,
+      transparent: true,
+      opacity: 0.45
+    });
+    scene.add(new THREE.Points(dustGeo, dustMat));
+
+    // =========================================================================
+    // 7. UI BINDINGS & PRESET HANDLERS
+    // =========================================================================
+    const sliderGamma = document.getElementById('slider-gamma');
+    const sliderDelta = document.getElementById('slider-delta');
+    const sliderNu = document.getElementById('slider-nu');
+    const sliderVolume = document.getElementById('slider-volume');
+
+    const valGamma = document.getElementById('val-gamma');
+    const valDelta = document.getElementById('val-delta');
+    const valNu = document.getElementById('val-nu');
+    const valVolume = document.getElementById('val-volume');
+
+    const teleEa = document.getElementById('tele-ea');
+    const teleEd = document.getElementById('tele-ed');
+    const teleDeltaE = document.getElementById('tele-delta-e');
+    const teleNodes = document.getElementById('tele-nodes');
+    const stateBadge = document.getElementById('state-badge');
+    const headerDot = document.getElementById('header-dot');
+
+    function syncSlidersFromState() {
+      sliderGamma.value = state.gamma;
+      sliderDelta.value = state.delta;
+      sliderNu.value = state.nu;
+      valGamma.textContent = state.gamma.toFixed(5);
+      valDelta.textContent = state.delta.toFixed(5);
+      valNu.textContent = state.nu.toFixed(3);
+    }
+
+    sliderGamma.addEventListener('input', (e) => {
+      state.gamma = parseFloat(e.target.value);
+      valGamma.textContent = state.gamma.toFixed(5);
+    });
+
+    sliderDelta.addEventListener('input', (e) => {
+      state.delta = parseFloat(e.target.value);
+      valDelta.textContent = state.delta.toFixed(5);
+    });
+
+    sliderNu.addEventListener('input', (e) => {
+      state.nu = parseFloat(e.target.value);
+      valNu.textContent = state.nu.toFixed(3);
+    });
+
+    document.getElementById('reset-gamma').addEventListener('click', () => {
+      state.gamma = 0.57721;
+      syncSlidersFromState();
+    });
+
+    document.getElementById('reset-delta').addEventListener('click', () => {
+      state.delta = 4.669201;
+      syncSlidersFromState();
+    });
+
+    document.getElementById('reset-nu').addEventListener('click', () => {
+      state.nu = 0.065;
+      syncSlidersFromState();
+    });
+
+    // Regime Presets
+    document.getElementById('preset-equilibrium').addEventListener('click', () => {
+      state.gamma = 0.57721;
+      state.delta = 4.669201;
+      state.nu = 0.065;
+      state.surgeEnergy = 0.0;
+      syncSlidersFromState();
+    });
+
+    document.getElementById('preset-locked').addEventListener('click', () => {
+      state.gamma = 0.0;
+      state.delta = 4.669201;
+      state.nu = 0.065;
+      state.surgeEnergy = 0.0;
+      syncSlidersFromState();
+    });
+
+    document.getElementById('preset-blowup').addEventListener('click', () => {
+      state.gamma = 0.57721;
+      state.delta = 7.25;
+      state.nu = 0.0;
+      syncSlidersFromState();
+    });
+
+    // Collapsible Drawer Toggle
+    const toggleControlsBtn = document.getElementById('toggle-controls-btn');
+    const controlsDrawer = document.getElementById('controls-drawer');
+    let drawerOpen = true;
+    toggleControlsBtn.addEventListener('click', () => {
+      drawerOpen = !drawerOpen;
+      controlsDrawer.classList.toggle('hidden', !drawerOpen);
+    });
+
+    // Audio Toggle & Volume
+    const audioToggleBtn = document.getElementById('audio-toggle-btn');
+    const audioLabel = document.getElementById('audio-label');
+    const audioIconOff = document.getElementById('audio-icon-off');
+    const audioIconOn = document.getElementById('audio-icon-on');
+    const volumeRow = document.getElementById('volume-row');
+
+    audioToggleBtn.addEventListener('click', () => {
+      const active = audioEngine.toggle();
+      state.audioEnabled = active;
+      audioLabel.textContent = active ? 'Jazz Touch Audio: ON' : 'Jazz Touch Audio: OFF';
+      audioIconOff.classList.toggle('hidden', active);
+      audioIconOn.classList.toggle('hidden', !active);
+      volumeRow.classList.toggle('hidden', !active);
+      audioToggleBtn.classList.toggle('border-amber-400/60', active);
+      audioToggleBtn.classList.toggle('bg-amber-500/15', active);
+      audioToggleBtn.classList.toggle('text-amber-200', active);
+    });
+
+    sliderVolume.addEventListener('input', (e) => {
+      state.audioVolume = parseFloat(e.target.value);
+      valVolume.textContent = `${Math.round(state.audioVolume * 100)}%`;
+      audioEngine.setVolume(state.audioVolume);
+    });
+
+    // Auto-Orbit Toggle
+    const orbitToggleBtn = document.getElementById('orbit-toggle-btn');
+    orbitToggleBtn.addEventListener('click', () => {
+      state.autoOrbit = !state.autoOrbit;
+      controls.autoRotate = state.autoOrbit;
+      orbitToggleBtn.textContent = state.autoOrbit ? 'Orbit: ON' : 'Orbit: OFF';
+      orbitToggleBtn.classList.toggle('opacity-60', !state.autoOrbit);
+    });
+
+    // =========================================================================
+    // 8. PHYSICS & GEOMETRY UPDATE LOOP
+    // =========================================================================
+    const tmpColor = new THREE.Color();
+    const colorCyan = new THREE.Color(0x38bdf8);
+    const colorEmerald = new THREE.Color(0x10b981);
+    const colorAmber = new THREE.Color(0xf59e0b);
+    const colorCrimson = new THREE.Color(0xef4444);
+
+    // Sample crest points along the analog vortex for boundary interaction
+    const crestSamples = [];
+    for (let k = 0; k < 24; k++) {
+      crestSamples.push(new THREE.Vector3());
+    }
+
+    function updateSimulation(dt, elapsed) {
+      // 1. Slippage & Phase Progression:
+      // At gamma = 0, phase locks into a rigid standing wave (zero progressive rotation).
+      // Near Euler-Mascheroni (0.57721), irrational-like slippage drives smooth 24/7 flow.
+      const slippageDrive = state.gamma === 0 ? 0.0 : (0.18 + state.gamma * 1.45);
+      state.simPhase += dt * slippageDrive;
+
+      // 2. Navier-Stokes Damping vs. Feigenbaum Cascade Tension:
+      // High cascade (delta) injects folding energy; viscosity (nu) dissipates it.
+      const cascadeDrive = Math.max(0, (state.delta - 2.0) / 6.0);
+      const dampingBrake = state.nu / BALANCED_NU; // 1.0 at balanced damping
+
+      if (state.nu < 0.015) {
+        // Near-zero damping permits rapid boundary energy accumulation
+        const growthRate = (0.015 - state.nu) * 42.0 * (0.4 + cascadeDrive);
+        state.surgeEnergy = Math.min(1.6, state.surgeEnergy + dt * growthRate);
+      } else {
+        // Viscous dissipation restores equilibrium cleanly
+        const decayRate = 1.4 + dampingBrake * 1.8;
+        state.surgeEnergy = Math.max(0.0, state.surgeEnergy - dt * decayRate);
+      }
+
+      // Compute effective wave amplitude reaching the B-Rep shell (R = 5.0)
+      const baseReach = 0.86 + 0.11 * Math.min(1.3, 1.0 / Math.max(0.45, dampingBrake));
+      const effectiveReach = Math.min(1.03, baseReach + state.surgeEnergy * 0.12);
+
+      // 3. Deform Continuous Analog Wave-Vortex Ribbon:
+      const posAttr = ribbonGeo.attributes.position;
+      const colAttr = ribbonGeo.attributes.color;
+      const spineAttr = spineGeo.attributes.position;
+
+      const turns = 1.6 + (state.delta / FEIGENBAUM_DELTA) * 2.2;
+      const subHarmonicScale = state.delta; // Feigenbaum bifurcation folding ratio
+      const standingPulse = state.gamma === 0
+        ? Math.sin(elapsed * 2.8) * 0.04 // Subtle in-place standing shiver when locked
+        : 0.0;
+
+      let crestIdx = 0;
+
+      for (let iu = 0; iu <= ribbonSegmentsU; iu++) {
+        const u = iu / ribbonSegmentsU; // 0 -> 1 along vortex
+        const s = (u - 0.5) * 2.0;      // -1 -> +1
+
+        // Spherical envelope keeps vortex contained inside R = 5.0 B-Rep shell
+        const envelope = Math.sqrt(Math.max(0.001, 1.0 - s * s * 0.92));
+
+        // Multi-harmonic Feigenbaum folding waves
+        const primaryAngle = u * Math.PI * 2 * turns + state.simPhase;
+        const harmonic1 = Math.sin(primaryAngle * 2.0 - state.simPhase * 1.618);
+        const harmonic2 = Math.cos(primaryAngle * (subHarmonicScale * 0.5) + state.simPhase * EULER_MASCHERONI);
+        const harmonic3 = Math.sin(primaryAngle * subHarmonicScale - state.simPhase * 2.236) * 0.35;
+
+        const radialMod =
+          0.68 +
+          0.22 * harmonic1 +
+          0.11 * harmonic2 +
+          0.06 * harmonic3 +
+          standingPulse;
+
+        const rCenter = BOUNDARY_RADIUS * effectiveReach * envelope * Math.min(1.04, radialMod);
+
+        // 3D Toroidal-Helical Spine Coordinates
+        const theta = primaryAngle;
+        const phi = s * (Math.PI * 0.46) + 0.22 * Math.sin(primaryAngle * 1.5 + state.simPhase);
+
+        const cx = rCenter * Math.cos(phi) * Math.cos(theta);
+        const cy = rCenter * Math.sin(phi) + 0.35 * harmonic2 * envelope;
+        const cz = rCenter * Math.cos(phi) * Math.sin(theta);
+
+        // Save spine centerline
+        spineAttr.setXYZ(iu, cx, cy, cz);
+
+        // Capture crest samples for B-Rep boundary node coupling
+        if (iu % Math.floor(ribbonSegmentsU / crestSamples.length) === 0 && crestIdx < crestSamples.length) {
+          crestSamples[crestIdx].set(cx, cy, cz);
+          crestIdx++;
+        }
+
+        // Local ribbon normal/binormal frame for width extrusion
+        const radialDir = new THREE.Vector3(cx, cy, cz).normalize();
+        const tangentApprox = new THREE.Vector3(-Math.sin(theta), 0.25 * Math.cos(phi), Math.cos(theta)).normalize();
+        const ribbonBinormal = new THREE.Vector3().crossVectors(radialDir, tangentApprox).normalize();
+
+        const ribbonHalfWidth = (0.42 + 0.24 * Math.abs(harmonic1)) * envelope;
+
+        for (let iv = 0; iv <= ribbonSegmentsV; iv++) {
+          const v = (iv / ribbonSegmentsV - 0.5) * 2.0; // -1 -> +1 across width
+          const idx = iu * (ribbonSegmentsV + 1) + iv;
+
+          // Twist ribbon slightly along Feigenbaum harmonic
+          const twist = v * ribbonHalfWidth;
+          const waveRipple = Math.cos(v * Math.PI * 1.5 + harmonic2 * 2.0) * 0.14 * envelope;
+
+          const vx = cx + ribbonBinormal.x * twist + radialDir.x * waveRipple;
+          const vy = cy + ribbonBinormal.y * twist + radialDir.y * waveRipple;
+          const vz = cz + ribbonBinormal.z * twist + radialDir.z * waveRipple;
+
+          posAttr.setXYZ(idx, vx, vy, vz);
+
+          // Color mapping: deep cyan interior -> emerald/amber at boundary -> crimson under surge
+          const radialRatio = Math.min(1.0, Math.sqrt(vx * vx + vy * vy + vz * vz) / BOUNDARY_RADIUS);
+          if (state.surgeEnergy > 0.35) {
+            tmpColor.lerpColors(colorAmber, colorCrimson, Math.min(1.0, (state.surgeEnergy - 0.35) * 1.1));
+            tmpColor.lerp(colorCyan, (1.0 - radialRatio) * 0.55);
+          } else {
+            tmpColor.lerpColors(colorCyan, colorEmerald, Math.pow(radialRatio, 2.2));
+            if (radialRatio > 0.86) {
+              tmpColor.lerp(colorAmber, (radialRatio - 0.86) / 0.14);
+            }
+          }
+
+          colAttr.setXYZ(idx, tmpColor.r, tmpColor.g, tmpColor.b);
+        }
+      }
+
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
+      spineAttr.needsUpdate = true;
+      ribbonGeo.computeVertexNormals();
+
+      // 4. Update Discrete Digital Boundary Octahedra & Tension Filaments:
+      let lockedCount = 0;
+      let filamentVertexPtr = 0;
+      let totalBoundarySampleEnergy = 0;
+
+      for (let i = 0; i < NODE_COUNT; i++) {
+        const node = boundaryNodes[i];
+        const worldBoundaryPt = node.unitDir.clone().multiplyScalar(BOUNDARY_RADIUS);
+
+        // Find closest analog wave crest to this B-Rep boundary site
+        let minDist = 999;
+        let closestCrest = crestSamples[0];
+        for (let k = 0; k < crestSamples.length; k++) {
+          const d = worldBoundaryPt.distanceTo(crestSamples[k]);
+          if (d < minDist) {
+            minDist = d;
+            closestCrest = crestSamples[k];
+          }
+        }
+
+        // Proximity threshold determines when analog wave condenses into a discrete sample
+        const proximity = Math.max(0, 1.0 - minDist / 2.75);
+        const targetActivation = Math.min(1.0, proximity * (1.0 + state.surgeEnergy * 0.65));
+        node.activation += (targetActivation - node.activation) * Math.min(1.0, dt * 12.0);
+
+        const isLocked = node.activation > 0.42;
+        if (isLocked) {
+          lockedCount++;
+          totalBoundarySampleEnergy += node.activation;
+
+          // Trigger Jazz Touch ride-bell ping on fresh boundary lock event
+          if (!node.wasLocked && state.gamma > 0.01) {
+            audioEngine.triggerRideBell(node.activation, i);
+          }
+        }
+        node.wasLocked = isLocked;
+
+        // Visual response of boundary octahedron (Goethe edge illumination)
+        const jitter = state.surgeEnergy > 0.4
+          ? (Math.random() - 0.5) * 0.09 * state.surgeEnergy
+          : 0.0;
+
+        node.mesh.position.copy(node.unitDir).multiplyScalar(BOUNDARY_RADIUS + jitter);
+        const scale = 0.68 + node.activation * 0.95 + state.surgeEnergy * 0.35;
+        node.mesh.scale.setScalar(scale);
+        node.mesh.rotation.y += dt * (0.6 + node.activation * 2.5);
+        node.mesh.rotation.x += dt * (0.4 + state.surgeEnergy * 3.0);
+
+        if (state.surgeEnergy > 0.45) {
+          node.mat.color.lerpColors(colorAmber, colorCrimson, Math.min(1.0, state.surgeEnergy - 0.3));
+          node.mat.emissive.copy(colorCrimson);
+          node.mat.emissiveIntensity = 0.8 + state.surgeEnergy * 1.4;
+        } else if (isLocked) {
+          node.mat.color.copy(colorAmber);
+          node.mat.emissive.copy(colorAmber);
+          node.mat.emissiveIntensity = 0.55 + node.activation * 0.95;
+        } else {
+          node.mat.color.copy(colorCyan);
+          node.mat.emissive.copy(colorCyan);
+          node.mat.emissiveIntensity = 0.25;
+        }
+
+        // Contact Halo Ring pulse
+        node.haloMat.opacity = isLocked ? (node.activation - 0.35) * 0.85 : 0.0;
+        node.haloMat.color.copy(state.surgeEnergy > 0.45 ? colorCrimson : colorAmber);
+        node.halo.scale.setScalar(0.85 + node.activation * 0.75);
+
+        // Draw tension filament from boundary octahedron to interior wave crest
+        if (isLocked && filamentVertexPtr < maxFilamentSegments * 2 - 2) {
+          const pA = node.mesh.position;
+          const pB = closestCrest;
+
+          filamentPositions[filamentVertexPtr * 3] = pA.x;
+          filamentPositions[filamentVertexPtr * 3 + 1] = pA.y;
+          filamentPositions[filamentVertexPtr * 3 + 2] = pA.z;
+
+          filamentPositions[(filamentVertexPtr + 1) * 3] = pB.x;
+          filamentPositions[(filamentVertexPtr + 1) * 3 + 1] = pB.y;
+          filamentPositions[(filamentVertexPtr + 1) * 3 + 2] = pB.z;
+
+          const fCol = state.surgeEnergy > 0.45 ? colorCrimson : colorAmber;
+          filamentColors[filamentVertexPtr * 3] = fCol.r;
+          filamentColors[filamentVertexPtr * 3 + 1] = fCol.g;
+          filamentColors[filamentVertexPtr * 3 + 2] = fCol.b;
+
+          filamentColors[(filamentVertexPtr + 1) * 3] = colorCyan.r;
+          filamentColors[(filamentVertexPtr + 1) * 3 + 1] = colorCyan.g;
+          filamentColors[(filamentVertexPtr + 1) * 3 + 2] = colorCyan.b;
+
+          filamentVertexPtr += 2;
+        }
+      }
+
+      // Zero out unused filament vertices
+      for (let v = filamentVertexPtr; v < maxFilamentSegments * 2; v++) {
+        filamentPositions[v * 3] = 0;
+        filamentPositions[v * 3 + 1] = 0;
+        filamentPositions[v * 3 + 2] = 0;
+      }
+      filamentGeo.setDrawRange(0, filamentVertexPtr);
+      filamentGeo.attributes.position.needsUpdate = true;
+      filamentGeo.attributes.color.needsUpdate = true;
+
+      // 5. Update B-Rep Boundary Cage Glow & Core Lighting:
+      if (state.surgeEnergy > 0.45) {
+        shellLineMat.color.lerpColors(colorAmber, colorCrimson, Math.min(1.0, state.surgeEnergy - 0.3));
+        shellLineMat.opacity = 0.34 + state.surgeEnergy * 0.25;
+        coreLight.color.copy(colorCrimson);
+      } else if (state.gamma === 0) {
+        shellLineMat.color.copy(colorAmber);
+        shellLineMat.opacity = 0.28;
+        coreLight.color.copy(colorAmber);
+      } else {
+        shellLineMat.color.copy(colorCyan);
+        shellLineMat.opacity = 0.24;
+        coreLight.color.copy(colorCyan);
+      }
+
+      // 6. Wheeler-DeWitt Energy Balance Ledger & Live Telemetry:
+      // E_A represents continuous field energy; E_D represents discrete boundary sample energy.
+      // Near balanced damping (nu ~ 0.065) and slippage (gamma ~ 0.57721), Delta-E -> 0.0000.
+      const rawEa = 1.0 + (cascadeDrive * 0.35) * (1.0 - Math.min(1.0, dampingBrake * 0.72)) + state.surgeEnergy * 0.85;
+      const sampleEfficiency = state.gamma === 0 ? 0.78 : (1.0 - Math.abs(state.nu - BALANCED_NU) * 1.4);
+      const rawEd = rawEa * Math.max(0.45, Math.min(1.02, sampleEfficiency)) - state.surgeEnergy * 0.42;
+
+      state.analogEnergy += (rawEa - state.analogEnergy) * Math.min(1.0, dt * 8.0);
+      state.digitalEnergy += (rawEd - state.digitalEnergy) * Math.min(1.0, dt * 8.0);
+      state.deltaEnergy = state.analogEnergy - state.digitalEnergy;
+      state.activeNodes = lockedCount;
+
+      audioEngine.updateAnalogPad(state.analogEnergy, state.gamma, state.surgeEnergy);
+
+      // Update HUD DOM Readouts
+      teleEa.textContent = state.analogEnergy.toFixed(4);
+      teleEd.textContent = state.digitalEnergy.toFixed(4);
+
+      const sign = state.deltaEnergy >= 0 ? '+' : '';
+      teleDeltaE.textContent = `${sign}${state.deltaEnergy.toFixed(4)}`;
+      teleNodes.textContent = `${String(lockedCount).padStart(2, '0')} / ${NODE_COUNT} LOCKED`;
+
+      // Update Regime Status Badge & Colors
+      if (state.surgeEnergy > 0.45 || Math.abs(state.deltaEnergy) > 0.32) {
+        stateBadge.textContent = 'HIGH TENSION // NEAR BLOW-UP';
+        stateBadge.className = 'w-full sm:w-auto text-center px-3 py-1.5 rounded-xl font-mono-tech text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase border bg-rose-500/20 border-rose-400/50 text-rose-300 transition-colors duration-200';
+        teleDeltaE.className = 'font-mono-tech text-xs sm:text-sm font-semibold text-rose-400 mt-0.5';
+        headerDot.className = 'w-2 h-2 rounded-full bg-rose-400 live-dot';
+      } else if (state.gamma <= 0.005) {
+        stateBadge.textContent = 'RESONANCE LOCK // STALLED';
+        stateBadge.className = 'w-full sm:w-auto text-center px-3 py-1.5 rounded-xl font-mono-tech text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase border bg-amber-500/20 border-amber-400/50 text-amber-300 transition-colors duration-200';
+        teleDeltaE.className = 'font-mono-tech text-xs sm:text-sm font-semibold text-amber-400 mt-0.5';
+        headerDot.className = 'w-2 h-2 rounded-full bg-amber-400 live-dot';
+      } else {
+        stateBadge.textContent = '24/7 FLOW // BALANCED';
+        stateBadge.className = 'w-full sm:w-auto text-center px-3 py-1.5 rounded-xl font-mono-tech text-[10px] sm:text-[11px] font-semibold tracking-wider uppercase border bg-emerald-500/15 border-emerald-400/40 text-emerald-300 transition-colors duration-200';
+        teleDeltaE.className = 'font-mono-tech text-xs sm:text-sm font-semibold text-emerald-400 mt-0.5';
+        headerDot.className = 'w-2 h-2 rounded-full bg-emerald-400 live-dot';
+      }
+    }
+
+    // =========================================================================
+    // 9. RESPONSIVE RESIZE & ANIMATION LOOP
+    // =========================================================================
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    });
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const elapsed = clock.getElapsedTime();
+
+      updateSimulation(dt, elapsed);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function () {
+      syncSlidersFromState();
+      animate();
+    };
+  </script>
+</body>
+</html>
