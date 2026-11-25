@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orch-OR to Kerr ER=EPR · Scale Invariance | Beyond Real Time</title>
+<style>
+  :root {
+    --bg: #04070f;
+    --panel: rgba(8, 14, 26, 0.88);
+    --border: rgba(77, 238, 234, 0.28);
+    --cyan: #38e8e1;
+    --gold: #f5b942;
+    --violet: #a78bfa;
+    --rose: #fb7185;
+    --green: #34d399;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 44%, #0d1930 0%, var(--bg) 82%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    user-select: none;
+  }
+  #canvas-wrap {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+  #canvas-wrap:active { cursor: grabbing; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  .hud-header {
+    position: fixed;
+    top: 12px;
+    left: 14px;
+    z-index: 10;
+    width: 390px;
+    max-width: calc(100vw - 28px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 11px 14px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+  .kicker {
+    font-size: 9.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  .title {
+    font-size: 15.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #f8fafc;
+  }
+  .subtitle {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.35;
+  }
+
+  .telemetry {
+    position: fixed;
+    top: 12px;
+    right: 14px;
+    z-index: 10;
+    width: 268px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 9px 13px;
+    font-size: 11px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+  .tel-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3.5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .tel-row:last-child { border-bottom: none; }
+  .tel-lbl { color: var(--muted); }
+  .tel-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 600;
+    color: var(--cyan);
+  }
+  .tel-val.gold { color: var(--gold); }
+  .tel-val.violet { color: var(--violet); }
+  .tel-val.ok { color: var(--green); }
+  .tel-val.warn { color: var(--rose); }
+
+  .controls {
+    position: fixed;
+    bottom: 8px;
+    left: 14px;
+    z-index: 10;
+    width: 345px;
+    max-width: calc(100vw - 28px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 9px 13px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.65);
+  }
+  .ctrl-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .ctrl-head span:first-child { color: #e2e8f0; font-weight: 500; }
+  .ctrl-head span:last-child {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--cyan);
+    font-weight: 600;
+    font-size: 10.5px;
+  }
+  .ctrl-group { margin-bottom: 7px; }
+  .scale-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    accent-color: var(--cyan);
+    cursor: pointer;
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 4px;
+  }
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+  button {
+    background: rgba(15, 23, 42, 0.9);
+    color: var(--text);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+  button:hover { border-color: var(--cyan); color: #fff; background: rgba(56, 232, 225, 0.14); }
+  button.active {
+    background: rgba(56, 232, 225, 0.22);
+    border-color: var(--cyan);
+    color: #fff;
+  }
+  button.gold-btn { border-color: rgba(245, 185, 66, 0.45); color: var(--gold); }
+  button.gold-btn:hover { background: rgba(245, 185, 66, 0.16); }
+
+  .legend {
+    position: fixed;
+    bottom: 8px;
+    right: 14px;
+    z-index: 10;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 10.5px;
+    max-width: 245px;
+  }
+  .leg-item { display: flex; align-items: center; gap: 7px; margin: 3px 0; color: var(--muted); }
+  .swatch { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  .callout {
+    position: fixed;
+    z-index: 6;
+    pointer-events: none;
+    background: rgba(5, 9, 18, 0.84);
+    border: 1px solid rgba(56, 232, 225, 0.45);
+    color: var(--cyan);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    transition: opacity 0.15s ease;
+  }
+  .callout.gold { border-color: rgba(245, 185, 66, 0.55); color: var(--gold); }
+  .callout.violet { border-color: rgba(167, 139, 250, 0.55); color: var(--violet); }
+
+  @media (max-width: 760px) {
+    .telemetry, .legend { display: none; }
+    .controls { width: calc(100% - 28px); }
+  }
+</style>
+</head>
+<body>
+<div id="canvas-wrap"></div>
+
+<div class="hud-header">
+  <div class="kicker"><span class="dot"></span>Beyond Real Time · Gallery Three · Scale Invariance</div>
+  <div class="title">Orch-OR Lattice ↔ Kerr Spinning ER=EPR Throat</div>
+  <div class="subtitle">From a 25 nm biological waveguide to a rotating Einstein–Rosen bridge: twist, path-integral recycling, and γ ≈ 0.57721 lock geometry across scales.</div>
+</div>
+
+<div class="telemetry">
+  <div class="tel-row"><span class="tel-lbl">Scale Regime</span><span class="tel-val violet" id="tel-regime">Hybrid Bridge (50%)</span></div>
+  <div class="tel-row"><span class="tel-lbl">Kerr Spin (a / M)</span><span class="tel-val gold" id="tel-spin">0.94 c</span></div>
+  <div class="tel-row"><span class="tel-lbl">Slippage Lock (γ)</span><span class="tel-val gold" id="tel-gamma">0.57721</span></div>
+  <div class="tel-row"><span class="tel-lbl">Throat / Lattice Sync</span><span class="tel-val ok" id="tel-sync">98.8% (Traversable)</span></div>
+  <div class="tel-row"><span class="tel-lbl">Topology</span><span class="tel-val" id="tel-topo">13-PF ↔ Ring Throat</span></div>
+</div>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-head">
+      <span>Scale Morph (25 nm Lattice → ER=EPR Throat)</span>
+      <span id="val-morph">50%</span>
+    </div>
+    <input type="range" id="rng-morph" min="0" max="100" value="50">
+    <div class="scale-ticks">
+      <span>25 nm Tubulin</span>
+      <span>Scale Bridge</span>
+      <span>Kerr Wormhole</span>
+    </div>
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-head">
+      <span>Kerr Angular Momentum / Helical Twist (a/M)</span>
+      <span id="val-spin">0.94</span>
+    </div>
+    <input type="range" id="rng-spin" min="0.00" max="0.99" step="0.01" value="0.94">
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-head">
+      <span>Euler–Mascheroni Phase Cushion (γ)</span>
+      <span id="val-gamma">0.57721</span>
+    </div>
+    <input type="range" id="rng-gamma" min="0.00" max="1.00" step="0.00001" value="0.57721">
+  </div>
+
+  <div class="btn-row">
+    <button data-preset="lattice">25 nm Lattice</button>
+    <button class="active" data-preset="bridge">Scale Bridge</button>
+    <button data-preset="wormhole">Kerr ER=EPR</button>
+    <button data-preset="throat">End-On Throat</button>
+    <button class="gold-btn" id="btn-reset-gamma">Lock γ = 0.57721</button>
+    <button id="btn-labels">Labels: ON</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="leg-item"><span class="swatch" style="background:#38bdf8"></span>α/β-Tubulin Shell ↔ Throat Mesh</div>
+  <div class="leg-item"><span class="swatch" style="background:#f5b942"></span>Kerr Ring Singularity / Waist (r = 0)</div>
+  <div class="leg-item"><span class="swatch" style="background:#38e8e1"></span>Frame-Dragged Twisted-Light Skeins</div>
+  <div class="leg-item"><span class="swatch" style="background:#a78bfa"></span>Non-Local ER=EPR Path Recycling</div>
+</div>
+
+<div class="callout" id="lbl-mouth-a">Region I · Local 25 nm / Upper Mouth</div>
+<div class="callout gold" id="lbl-waist">Kerr Ring Waist (r = 0) · Angular Twist</div>
+<div class="callout violet" id="lbl-mouth-b">Region II · Conjugate ER=EPR Mouth</div>
+
+<!-- Standard UMD Three.js + OrbitControls (No ES Module / ImportMap Blocks) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+(function () {
+  var wrap = document.getElementById('canvas-wrap');
+  function getSize() {
+    var r = wrap.getBoundingClientRect();
+    return {
+      w: Math.max(r.width || window.innerWidth || 900, 300),
+      h: Math.max(r.height || window.innerHeight || 700, 300)
+    };
+  }
+
+  var init = getSize();
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x04070f, 0.0085);
+
+  var camera = new THREE.PerspectiveCamera(42, init.w / init.h, 0.1, 260);
+  camera.position.set(22, 13, 30);
+
+  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(init.w, init.h);
+  wrap.appendChild(renderer.domElement);
+
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.06;
+  controls.minDistance = 8;
+  controls.maxDistance = 80;
+  controls.target.set(0, -1.2, 0);
+  controls.update();
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0x475569, 1.5));
+  var keyLight = new THREE.DirectionalLight(0xe0f2fe, 2.0);
+  keyLight.position.set(18, 26, 22);
+  scene.add(keyLight);
+
+  var rimLight = new THREE.DirectionalLight(0xa78bfa, 1.3);
+  rimLight.position.set(-22, -14, -18);
+  scene.add(rimLight);
+
+  var waistLight = new THREE.PointLight(0xf5b942, 3.2, 40, 1.3);
+  waistLight.position.set(0, 0, 0);
+  scene.add(waistLight);
+
+  // 2001 Starfield Backdrop
+  var starGeo = new THREE.BufferGeometry();
+  var starCount = 900;
+  var starPos = new Float32Array(starCount * 3);
+  for (var i = 0; i < starCount; i++) {
+    var r = 65 + Math.random() * 95;
+    var theta = Math.random() * Math.PI * 2;
+    var phi = Math.acos(2 * Math.random() - 1);
+    starPos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+    starPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    starPos[i * 3 + 2] = r * Math.cos(phi);
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  var starMat = new THREE.PointsMaterial({ color: 0xcbd5e1, size: 0.36, transparent: true, opacity: 0.75 });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  // Main Assembly
+  var worldGroup = new THREE.Group();
+  worldGroup.position.set(0, -1.0, 0);
+  scene.add(worldGroup);
+
+  var NUM_PF = 13;
+  var RINGS = 24;
+  var SPAN_Z = 34.0;
+  var BASE_R = 7.2;
+
+  var nodeGeo = new THREE.SphereGeometry(0.58, 16, 14);
+  var nodes = [];
+  var nodeGroup = new THREE.Group();
+  worldGroup.add(nodeGroup);
+
+  for (var pf = 0; pf < NUM_PF; pf++) {
+    var baseTheta = (pf / NUM_PF) * Math.PI * 2;
+    for (var j = 0; j < RINGS; j++) {
+      var u = (j / (RINGS - 1)) * 2 - 1;
+      var z = u * (SPAN_Z * 0.5) + (pf / NUM_PF) * 0.65;
+      var isAlpha = j % 2 === 0;
+
+      var mat = new THREE.MeshStandardMaterial({
+        color: isAlpha ? 0x38bdf8 : 0x34d399,
+        emissive: isAlpha ? 0x0284c7 : 0x059669,
+        emissiveIntensity: 0.45,
+        roughness: 0.26,
+        metalness: 0.22
+      });
+      var mesh = new THREE.Mesh(nodeGeo, mat);
+      nodeGroup.add(mesh);
+
+      nodes.push({ pf: pf, i: j, u: u, z: z, baseTheta: baseTheta, isAlpha: isAlpha, mesh: mesh, mat: mat });
+    }
+  }
+
+  // Spacetime Embedding Rings
+  var gridGroup = new THREE.Group();
+  worldGroup.add(gridGroup);
+  var gridRings = [];
+  var GRID_RING_COUNT = 19;
+  for (var k = 0; k < GRID_RING_COUNT; k++) {
+    var uk = (k / (GRID_RING_COUNT - 1)) * 2 - 1;
+    var pts = [];
+    for (var s = 0; s <= 72; s++) {
+      var a = (s / 72) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a), Math.sin(a), 0));
+    }
+    var geo = new THREE.BufferGeometry().setFromPoints(pts);
+    var gMat = new THREE.LineBasicMaterial({
+      color: Math.abs(uk) < 0.15 ? 0xf5b942 : 0x38e8e1,
+      transparent: true,
+      opacity: 0.34
+    });
+    var line = new THREE.Line(geo, gMat);
+    line.position.z = uk * (SPAN_Z * 0.5);
+    gridGroup.add(line);
+    gridRings.push({ line: line, mat: gMat, u: uk });
+  }
+
+  // Kerr Ring Singularity / Waist Halo
+  var kerrRingGeo = new THREE.TorusGeometry(4.2, 0.16, 16, 96);
+  var kerrRingMat = new THREE.MeshStandardMaterial({
+    color: 0xf5b942,
+    emissive: 0xd97706,
+    emissiveIntensity: 1.5,
