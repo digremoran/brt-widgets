@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orch-OR to Kerr ER=EPR · Scale Invariance | Beyond Real Time</title>
+<style>
+  :root {
+    --bg: #04070f;
+    --panel: rgba(8, 14, 26, 0.88);
+    --border: rgba(77, 238, 234, 0.28);
+    --cyan: #38e8e1;
+    --gold: #f5b942;
+    --violet: #a78bfa;
+    --rose: #fb7185;
+    --green: #34d399;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 44%, #0d1930 0%, var(--bg) 82%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    user-select: none;
+  }
+  #canvas-wrap {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+  #canvas-wrap:active { cursor: grabbing; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* Top-Left Header */
+  .hud-header {
+    position: fixed;
+    top: 12px;
+    left: 14px;
+    z-index: 10;
+    width: 390px;
+    max-width: calc(100vw - 28px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 11px 14px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+  .kicker {
+    font-size: 9.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  .title {
+    font-size: 15.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #f8fafc;
+  }
+  .subtitle {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.35;
+  }
+
+  /* Top-Right Live Telemetry */
+  .telemetry {
+    position: fixed;
+    top: 12px;
+    right: 14px;
+    z-index: 10;
+    width: 268px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 9px 13px;
+    font-size: 11px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+  .tel-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3.5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .tel-row:last-child { border-bottom: none; }
+  .tel-lbl { color: var(--muted); }
+  .tel-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 600;
+    color: var(--cyan);
+  }
+  .tel-val.gold { color: var(--gold); }
+  .tel-val.violet { color: var(--violet); }
+  .tel-val.ok { color: var(--green); }
+  .tel-val.warn { color: var(--rose); }
+
+  /* Bottom-Left Controls — tucked cleanly at bottom edge */
+  .controls {
+    position: fixed;
+    bottom: 8px;
+    left: 14px;
+    z-index: 10;
+    width: 345px;
+    max-width: calc(100vw - 28px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 9px 13px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.65);
+  }
+  .ctrl-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .ctrl-head span:first-child { color: #e2e8f0; font-weight: 500; }
+  .ctrl-head span:last-child {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--cyan);
+    font-weight: 600;
+    font-size: 10.5px;
+  }
+  .ctrl-group { margin-bottom: 7px; }
+  .scale-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    accent-color: var(--cyan);
+    cursor: pointer;
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 4px;
+  }
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+  button {
+    background: rgba(15, 23, 42, 0.9);
+    color: var(--text);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.16s ease;
+  }
+  button:hover { border-color: var(--cyan); color: #fff; background: rgba(56, 232, 225, 0.14); }
+  button.active {
+    background: rgba(56, 232, 225, 0.22);
+    border-color: var(--cyan);
+    color: #fff;
+  }
+  button.gold-btn { border-color: rgba(245, 185, 66, 0.45); color: var(--gold); }
+  button.gold-btn:hover { background: rgba(245, 185, 66, 0.16); }
+
+  /* Bottom-Right Legend */
+  .legend {
+    position: fixed;
+    bottom: 8px;
+    right: 14px;
+    z-index: 10;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 10.5px;
+    max-width: 245px;
+  }
+  .leg-item { display: flex; align-items: center; gap: 7px; margin: 3px 0; color: var(--muted); }
+  .swatch { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Projected Callouts */
+  .callout {
+    position: fixed;
+    z-index: 6;
+    pointer-events: none;
+    background: rgba(5, 9, 18, 0.84);
+    border: 1px solid rgba(56, 232, 225, 0.45);
+    color: var(--cyan);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    transition: opacity 0.15s ease;
+  }
+  .callout.gold { border-color: rgba(245, 185, 66, 0.55); color: var(--gold); }
+  .callout.violet { border-color: rgba(167, 139, 250, 0.55); color: var(--violet); }
+
+  @media (max-width: 760px) {
+    .telemetry, .legend { display: none; }
+    .controls { width: calc(100% - 28px); }
+  }
+</style>
+</head>
+<body>
+<div id="canvas-wrap"></div>
+
+<!-- Top-Left Header -->
+<div class="hud-header">
+  <div class="kicker"><span class="dot"></span>Beyond Real Time · Gallery Three · Scale Invariance</div>
+  <div class
